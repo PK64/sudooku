@@ -10,6 +10,7 @@ import { TYPE_MODE, TYPE_MODE_GROUP, TYPE_SELECTION, TYPE_UNDO, TYPE_REDO, TYPE_
   ACTION_RIGHT, ACTION_LEFT, ACTION_UP, ACTION_DOWN } from "../../components/lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_COLOUR, MODE_PEN } from "../../components/lib/Modes"
 import { convertFPuzzle } from "../../components/lib/fpuzzlesconverter.js"
+import { convertGivenDigits } from "../../components/lib/givendigitsconverter.js"
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { Frown, ThumbsUp } from "lucide-react"
 import Head from "next/head"
@@ -17,6 +18,7 @@ import styles from "./index.scss"
 
 const DATABASE_URL = "https://firebasestorage.googleapis.com/v0/b/sudoku-sandbox.appspot.com/o/{}?alt=media"
 const FALLBACK_URL = `${process.env.basePath}/puzzles/{}.json`
+const GIVENDIGITS_KEY = "given"
 
 const Index = () => {
   const game = useContext(GameContext.State)
@@ -78,6 +80,11 @@ const Index = () => {
         if (!id.startsWith("fpuzzles")) {
           id = "fpuzzles" + id
         }
+      }
+
+      let givenDigits = s.get(GIVENDIGITS_KEY)
+      if (givenDigits !== null) {
+        id = GIVENDIGITS_KEY + givenDigits
       }
 
       let testId = s.get("test")
@@ -146,6 +153,14 @@ const Index = () => {
       document.body.appendChild(iframe)
     }
 
+    async function loadGivenDigits(digitsString) {
+      let json = convertGivenDigits(digitsString)
+      updateGame({
+        type: TYPE_INIT,
+        data: json
+      })
+    }
+
     async function loadTest() {
       window.initTestGrid = function(json) {
         if (json.fpuzzles !== undefined) {
@@ -170,6 +185,8 @@ const Index = () => {
       loadFPuzzles()
     } else if (id === "test") {
       loadTest()
+    } else if (id.startsWith(GIVENDIGITS_KEY)) {
+      loadGivenDigits(id.substring(GIVENDIGITS_KEY.length))
     } else {
       let url
       let fallbackUrl
