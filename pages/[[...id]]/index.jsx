@@ -210,7 +210,8 @@ const Index = () => {
       if (e.key === " ") {
         updateGame({
           type: TYPE_MODE,
-          action: ACTION_ROTATE
+          action: ACTION_ROTATE,
+          mode: settings.marksPlacement
         })
         e.preventDefault()
       } else if (e.key === "Tab" && !metaPressed && !shiftPressed && !altPressed) {
@@ -387,7 +388,7 @@ const Index = () => {
       window.removeEventListener("keyup", onKeyUp)
       window.removeEventListener("keydown", onKeyDown)
     }
-  }, [updateGame])
+  }, [updateGame, settings.marksPlacement])
 
   // register resize handler
   useEffect(() => {

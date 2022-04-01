@@ -4,11 +4,13 @@ import RangeSlider from "./RangeSlider"
 import SettingsContext from "./contexts/SettingsContext"
 import { useContext, useEffect, useRef, useState } from "react"
 import styles from "./Settings.scss"
+import { MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 
 const Settings = () => {
   const settings = useContext(SettingsContext.State)
   const updateSettings = useContext(SettingsContext.Dispatch)
   const [themeInternal, setThemeInternal] = useState(settings.theme)
+  const [marksPlacementInternal, setMarksPlacementInternal] = useState(settings.marksPlacement)
 
   const refPlaceholderCTC = useRef()
   const refPlaceholderWong = useRef()
@@ -22,6 +24,13 @@ const Settings = () => {
     setThemeInternal(theme)
     setTimeout(() => {
       updateSettings({ theme })
+    }, 100)
+  }
+
+  function onChangeMarksPlacement(placement) {
+    setMarksPlacementInternal(placement)
+    setTimeout(() => {
+      updateSettings({ marksPlacement: placement })
     }, 100)
   }
 
@@ -52,6 +61,10 @@ const Settings = () => {
 
   function onChangeFontSizeCentreMarks(value) {
     updateSettings({ fontSizeFactorCentreMarks: value })
+  }
+
+  function onChangeFontSizeFixedMarks(value) {
+    updateSettings({ fontSizeFactorFixedMarks: value })
   }
 
   function fontSizeValueToDescription(value) {
@@ -113,6 +126,15 @@ const Settings = () => {
       label: "Dark"
     }]} onChange={onChangeTheme} />
 
+    <h3>Pencil Mark Placement</h3>
+    <RadioGroup name="marksPlacement" value={settings.marksPlacement} options={[{
+      id: "default",
+      label: "Corner and Centre"
+    }, {
+      id: "fixed",
+      label: "Fixed"
+    }]} onChange={onChangeMarksPlacement} />
+
     <h3>Colour Palette</h3>
     <div className="palette-placeholder" data-colour-palette="ctc" ref={refPlaceholderCTC} />
     <div className="palette-placeholder" data-colour-palette="wong" ref={refPlaceholderWong} />
@@ -150,18 +172,32 @@ const Settings = () => {
         onChange={onChangeFontSizeDigits}
         valueToDescription={fontSizeValueToDescription} />
     </div>
-    <div className="slider">
-      <RangeSlider id="range-corner-marks" label="Corner marks"
-        min="0.75" max="1.5" step="0.125" value={settings.fontSizeFactorCornerMarks}
-        onChange={onChangeFontSizeCornerMarks}
-        valueToDescription={fontSizeValueToDescription} />
-    </div>
-    <div className="slider">
-      <RangeSlider id="range-centre-marks" label="Centre marks"
-        min="0.75" max="1.5" step="0.125" value={settings.fontSizeFactorCentreMarks}
-        onChange={onChangeFontSizeCentreMarks}
-        valueToDescription={fontSizeValueToDescription} />
-    </div>
+    {settings.marksPlacement === "default" &&
+    (
+      <div>
+        <div className="slider">
+        <RangeSlider id="range-corner-marks" label="Corner marks"
+          min="0.75" max="1.5" step="0.125" value={settings.fontSizeFactorCornerMarks}
+          onChange={onChangeFontSizeCornerMarks}
+          valueToDescription={fontSizeValueToDescription} />
+        </div>
+        <div className="slider">
+          <RangeSlider id="range-centre-marks" label="Centre marks"
+            min="0.75" max="1.5" step="0.125" value={settings.fontSizeFactorCentreMarks}
+            onChange={onChangeFontSizeCentreMarks}
+            valueToDescription={fontSizeValueToDescription} />
+        </div>
+      </div>
+    )}
+    {settings.marksPlacement === MARKS_PLACEMENT_FIXED &&
+    (
+      <div className="slider">
+        <RangeSlider id="range-corner-marks" label="Pencil marks"
+          min="0.75" max="1.5" step="0.125" value={settings.fontSizeFactorFixedMarks}
+          onChange={onChangeFontSizeFixedMarks}
+          valueToDescription={fontSizeValueToDescription} />
+      </div>
+    )}
 
     <style jsx>{styles}</style>
   </>)

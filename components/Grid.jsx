@@ -2,7 +2,7 @@ import GameContext from "./contexts/GameContext"
 import SettingsContext from "./contexts/SettingsContext"
 import { TYPE_DIGITS, TYPE_PENLINES, TYPE_SELECTION, ACTION_CLEAR,
   ACTION_SET, ACTION_PUSH, ACTION_REMOVE } from "./lib/Actions"
-import { MODE_PEN } from "./lib/Modes"
+import { MARKS_PLACEMENT_FIXED, MARKS_PLACEMENT_DEFAULT, MODE_PEN } from "./lib/Modes"
 import { ktoxy, xytok, pltok } from "./lib/utils"
 import Color from "color"
 import polygonClipping from "polygon-clipping"
@@ -17,6 +17,8 @@ const FONT_SIZE_CORNER_MARKS_HIGH_DPI = 27
 const FONT_SIZE_CORNER_MARKS_LOW_DPI = 28
 const FONT_SIZE_CENTRE_MARKS_HIGH_DPI = 29
 const FONT_SIZE_CENTRE_MARKS_LOW_DPI = 29
+const FONT_SIZE_FIXED_MARKS_HIGH_DPI = 27
+const FONT_SIZE_FIXED_MARKS_LOW_DPI = 28
 const MAX_RENDER_LOOP_TIME = 500
 
 const PENLINE_TYPE_CENTER_RIGHT = 0
@@ -342,6 +344,73 @@ function filterDuplicatePoints(points) {
   return points
 }
 
+function makeFixedMarks(x, y, cellSize, fontSize, n = 9, fontWeight = "normal") {
+  let result = []
+  for (let i = 0; i < n; ++i) {
+    let text = new PIXI.Text("", {
+      fontFamily: "Roboto, sans-serif",
+      fontSize,
+      fontWeight
+    })
+
+    text.data = {
+      draw: function (cellSize) {
+        let cx = x * cellSize + cellSize / 2
+        let cy = y * cellSize + cellSize / 2 - 0.5
+        let mx = cellSize / 3.2
+        let my = cellSize / 3.4
+
+        switch (i) {
+          case 0:
+            text.x = cx - mx
+            text.y = cy - my
+            break
+          case 1:
+            text.x = cx
+            text.y = cy - my
+            break
+          case 2:
+            text.x = cx + mx
+            text.y = cy - my
+            break
+          case 3:
+            text.x = cx - mx
+            text.y = cy
+            break
+          case 4:
+            text.x = cx
+            text.y = cy
+            break
+          case 5:
+            text.x = cx + mx
+            text.y = cy
+            break
+          case 6:
+            text.x = cx - mx
+            text.y = cy + my
+            break
+          case 7:
+            text.x = cx
+            text.y = cy + my
+            break
+          case 8:
+            text.x = cx + mx
+            text.y = cy + my
+            break
+        }
+      }
+    }
+
+    text.anchor.set(0.5)
+    text.scale.x = 0.5
+    text.scale.y = 0.5
+
+    result.push(text)
+  }
+
+  return result
+}
+
 function makeCornerMarks(x, y, cellSize, fontSize, leaveRoom, n = 11, fontWeight = "normal") {
   let result = []
 
@@ -602,6 +671,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   const digitElements = useRef([])
   const centreMarkElements = useRef([])
   const cornerMarkElements = useRef([])
+  const fixedMarkElements = useRef([])
   const colourElements = useRef([])
   const selectionElements = useRef([])
   const errorElements = useRef([])
@@ -1317,55 +1387,82 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       })
     })
 
-    // create empty text elements for corner marks
-    game.data.cells.forEach((row, y) => {
-      row.forEach((col, x) => {
-        let cell = {
-          data: {
-            k: xytok(x, y)
-          },
-          elements: []
-        }
-
-        let leaveRoom = hasCageValue(x, y, cages) || hasGivenCornerMarks(col)
-        let cms = makeCornerMarks(x, y, cellSize, FONT_SIZE_CORNER_MARKS_HIGH_DPI,
-            leaveRoom, 11)
-        for (let cm of cms) {
-          cm.visible = false
-          cm.zIndex = 50
-          cm.style.fill = themeColours.digitColor
-          all.addChild(cm)
-          cell.elements.push(cm)
-        }
-
-        cornerMarkElements.current.push(cell)
-      })
-    })
-
-    // create empty text elements for centre marks
-    game.data.cells.forEach((row, y) => {
-      row.forEach((col, x) => {
-        let text = new PIXI.Text("", {
-          fontFamily: "Roboto, sans-serif",
-          fontSize: FONT_SIZE_CENTRE_MARKS_HIGH_DPI
-        })
-        text.zIndex = 50
-        text.anchor.set(0.5)
-        text.style.fill = themeColours.digitColor
-        text.scale.x = 0.5
-        text.scale.y = 0.5
-        text.visible = false
-        text.data = {
-          k: xytok(x, y),
-          draw: function (cellSize) {
-            text.x = x * cellSize + cellSize / 2
-            text.y = y * cellSize + cellSize / 2 - 0.5
+    if (settings.marksPlacement === MARKS_PLACEMENT_FIXED) {
+      // create empty text elements for fixed marks
+      game.data.cells.forEach((row, y) => {
+        row.forEach((col, x) => {
+          let cell = {
+            data: {
+              k: xytok(x, y)
+            },
+            elements: []
           }
-        }
-        all.addChild(text)
-        centreMarkElements.current.push(text)
+
+          let fms = makeFixedMarks(x, y, cellSize, FONT_SIZE_FIXED_MARKS_HIGH_DPI)
+          for (let fm of fms) {
+            fm.visible = false
+            fm.zIndex = 50
+            fm.style.fill = themeColours.digitColor
+            all.addChild(fm)
+            cell.elements.push(fm)
+          }
+
+          fixedMarkElements.current.push(cell)
+        })
       })
-    })
+    }
+
+    if (settings.marksPlacement === MARKS_PLACEMENT_DEFAULT) {
+      // create empty text elements for corner marks
+      game.data.cells.forEach((row, y) => {
+        row.forEach((col, x) => {
+          let cell = {
+            data: {
+              k: xytok(x, y)
+            },
+            elements: []
+          }
+
+          let leaveRoom = hasCageValue(x, y, cages) || hasGivenCornerMarks(col)
+          let cms = makeCornerMarks(x, y, cellSize, FONT_SIZE_CORNER_MARKS_HIGH_DPI,
+              leaveRoom, 11)
+          for (let cm of cms) {
+            cm.visible = false
+            cm.zIndex = 50
+            cm.style.fill = themeColours.digitColor
+            all.addChild(cm)
+            cell.elements.push(cm)
+          }
+
+          cornerMarkElements.current.push(cell)
+        })
+      })
+
+      // create empty text elements for centre marks
+      game.data.cells.forEach((row, y) => {
+        row.forEach((col, x) => {
+          let text = new PIXI.Text("", {
+            fontFamily: "Roboto, sans-serif",
+            fontSize: FONT_SIZE_CENTRE_MARKS_HIGH_DPI
+          })
+          text.zIndex = 50
+          text.anchor.set(0.5)
+          text.style.fill = themeColours.digitColor
+          text.scale.x = 0.5
+          text.scale.y = 0.5
+          text.visible = false
+          text.data = {
+            k: xytok(x, y),
+            draw: function (cellSize) {
+              text.x = x * cellSize + cellSize / 2
+              text.y = y * cellSize + cellSize / 2 - 0.5
+            }
+          }
+          all.addChild(text)
+          centreMarkElements.current.push(text)
+        })
+      })
+    }
 
     // create invisible rectangles for colours
     game.data.cells.forEach((row, y) => {
@@ -1556,6 +1653,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       digitElements.current = []
       centreMarkElements.current = []
       cornerMarkElements.current = []
+      fixedMarkElements.current = []
       colourElements.current = []
       selectionElements.current = []
       errorElements.current = []
@@ -1572,7 +1670,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       app.current = undefined
     }
   }, [game.data, cellSize, regions, cages, extraRegions, selectCell, onPenMove,
-    updateGame, onFinishRender, onTouchMove, onPointerUp])
+    updateGame, onFinishRender, onTouchMove, onPointerUp, settings.marksPlacement])
 
   useEffect(() => {
     let cs = cellSize * (settings.zoom + ZOOM_DELTA)
@@ -1600,6 +1698,11 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       for (let e of cornerMarkElements.current) {
         for (let ce of e.elements) {
           ce.data.draw(cs)
+        }
+      }
+      for (let e of fixedMarkElements.current) {
+        for (let fe of e.elements) {
+          fe.data.draw(cs)
         }
       }
 
@@ -1702,11 +1805,14 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
         FONT_SIZE_CORNER_MARKS_HIGH_DPI : FONT_SIZE_CORNER_MARKS_LOW_DPI
     let fontSizeCentreMarks = window.devicePixelRatio >= 2 ?
         FONT_SIZE_CENTRE_MARKS_HIGH_DPI : FONT_SIZE_CENTRE_MARKS_LOW_DPI
+    let fontSizeFixedMarks = window.devicePixelRatio >= 2 ?
+        FONT_SIZE_FIXED_MARKS_HIGH_DPI : FONT_SIZE_FIXED_MARKS_LOW_DPI
 
     // scale fonts
     let fontSizeDigits = FONT_SIZE_DIGITS * settings.fontSizeFactorDigits
     fontSizeCornerMarks *= settings.fontSizeFactorCornerMarks
     fontSizeCentreMarks *= settings.fontSizeFactorCentreMarks
+    fontSizeFixedMarks *= settings.fontSizeFactorFixedMarks
 
     // change font size of digits
     for (let e of digitElements.current) {
@@ -1723,6 +1829,13 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     // change font size of centre marks
     for (let e of centreMarkElements.current) {
       e.style.fontSize = Math.round(fontSizeCentreMarks * cellSizeFactor.current)
+    }
+
+    // change font size of fixed marks
+    for (let e of fixedMarkElements.current) {
+      for (let fe of e.elements) {
+        fe.style.fontSize = Math.round(fontSizeFixedMarks * cellSizeFactor.current)
+      }
     }
 
     // change font size and colour of given corner marks
@@ -1749,6 +1862,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       app.current.renderer.height, themeColours)
   }, [settings.theme, settings.selectionColour, settings.zoom, settings.fontSizeFactorDigits,
       settings.fontSizeFactorCentreMarks, settings.fontSizeFactorCornerMarks,
+      settings.fontSizeFactorFixedMarks,
       maxWidth, maxHeight, portrait, game.mode])
 
   useEffect(() => {
@@ -1762,35 +1876,58 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     let themeColours = getThemeColours(ref.current)
     let cornerMarks = new Map()
     let centreMarks = new Map()
+    let fixedMarks = new Map()
 
-    for (let e of cornerMarkElements.current) {
-      let digits = game.cornerMarks.get(e.data.k)
-      for (let ce of e.elements) {
-        ce.visible = false
+    if (settings.marksPlacement === MARKS_PLACEMENT_DEFAULT) {
+      for (let e of cornerMarkElements.current) {
+        let digits = game.cornerMarks.get(e.data.k)
+        for (let ce of e.elements) {
+          ce.visible = false
+        }
+        if (digits !== undefined) {
+          [...digits].sort().forEach((d, i) => {
+            let n = i
+            if (digits.size > 8 && n > 4) {
+              n++
+            }
+            e.elements[n].text = d
+            e.elements[n].style.fill = themeColours.smallDigitColor
+            e.elements[n].visible = true
+          })
+          cornerMarks.set(e.data.k, e)
+        }
       }
-      if (digits !== undefined) {
-        [...digits].sort().forEach((d, i) => {
-          let n = i
-          if (digits.size > 8 && n > 4) {
-            n++
-          }
-          e.elements[n].text = d
-          e.elements[n].style.fill = themeColours.smallDigitColor
-          e.elements[n].visible = true
-        })
-        cornerMarks.set(e.data.k, e)
+
+      for (let e of centreMarkElements.current) {
+        let digits = game.centreMarks.get(e.data.k)
+        if (digits !== undefined) {
+          e.text = [...digits].sort().join("")
+          e.style.fill = themeColours.smallDigitColor
+          e.visible = true
+          centreMarks.set(e.data.k, e)
+        } else {
+          e.visible = false
+        }
       }
     }
 
-    for (let e of centreMarkElements.current) {
-      let digits = game.centreMarks.get(e.data.k)
-      if (digits !== undefined) {
-        e.text = [...digits].sort().join("")
-        e.style.fill = themeColours.smallDigitColor
-        e.visible = true
-        centreMarks.set(e.data.k, e)
-      } else {
-        e.visible = false
+    if (settings.marksPlacement === MARKS_PLACEMENT_FIXED) {
+      for (let e of fixedMarkElements.current) {
+        let digits = game.fixedMarks.get(e.data.k)
+        for (let fe of e.elements) {
+          fe.visible = false
+        }
+        if (digits !== undefined) {
+          for (let d of digits) {
+            if (d > 0) {
+              let n = d - 1
+              e.elements[n].text = d
+              e.elements[n].style.fill = themeColours.smallDigitColor
+              e.elements[n].visible = true
+            }
+          }
+          fixedMarks.set(e.data.k, e)
+        }
       }
     }
 
@@ -1811,6 +1948,13 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
         let cem = centreMarks.get(e.data.k)
         if (cem !== undefined) {
           cem.visible = false
+        }
+
+        let fim = fixedMarks.get(e.data.k)
+        if (fim !== undefined) {
+          for (let fe of fim.elements) {
+            fe.visible = false
+          }
         }
       } else {
         e.visible = false
@@ -1868,6 +2012,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       settings.selectionColour, settings.customColours, settings.zoom,
       settings.fontSizeFactorDigits, settings.fontSizeFactorCentreMarks,
       settings.fontSizeFactorCornerMarks, maxWidth, maxHeight, portrait,
+      settings.fontSizeFactorFixedMarks, settings.marksPlacement, game.fixedMarks,
       renderNow, game.mode])
 
   return (

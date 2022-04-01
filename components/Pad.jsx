@@ -3,13 +3,33 @@ import SettingsContext from "./contexts/SettingsContext"
 import GameContext from "./contexts/GameContext"
 import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
   TYPE_CHECK, ACTION_SET, ACTION_REMOVE } from "./lib/Actions"
-import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_COLOUR, MODE_PEN,
-  getModeGroup } from "./lib/Modes"
+import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
+  getModeGroup, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
 import { Check, Delete, Redo, Undo } from "lucide-react"
 import Color from "color"
 import classNames from "classnames"
 import styles from "./Pad.scss"
+
+const ModeButton = ({ mode, label }) => {
+  const updateGame = useContext(GameContext.Dispatch)
+  const game = useContext(GameContext.State)
+
+  function onMode(mode) {
+    updateGame({
+      type: TYPE_MODE,
+      action: ACTION_SET,
+      mode
+    })
+  }
+
+  return (
+    <Button active={game.mode === mode}
+      noPadding onClick={() => onMode(mode)}>
+      <div className="label-container">{label}<style jsx>{styles}</style></div>
+    </Button>
+  )
+}
 
 const Pad = () => {
   const ref = useRef()
@@ -109,9 +129,53 @@ const Pad = () => {
     })
   }
 
+  let modeGroup = getModeGroup(game.mode)
+
+  const modeButtons = []
+
+  if (modeGroup === 0) {
+    // 0
+    modeButtons.push(
+      <ModeButton mode={MODE_NORMAL} label="Normal"></ModeButton>
+    )
+
+    // 1, 2
+    if (settings.marksPlacement === MARKS_PLACEMENT_FIXED) {
+      modeButtons.push(
+        <ModeButton mode={MODE_FIXED} label="Pencil"></ModeButton>
+      )
+      modeButtons.push(
+        <div className="placeholder"><style jsx>{styles}</style></div>
+      )
+    } else {
+      modeButtons.push(
+        <ModeButton mode={MODE_CORNER} label="Corner"></ModeButton>
+      )
+      modeButtons.push(
+        <ModeButton mode={MODE_CENTRE} label="Centre"></ModeButton>
+      )
+    }
+
+    // 3
+    modeButtons.push(
+      <ModeButton mode={MODE_COLOUR} label="Colour"></ModeButton>
+    )
+  } else {
+    // 0
+    modeButtons.push(
+      <ModeButton mode={MODE_PEN} label="Pen"></ModeButton>
+    )
+
+    // 1, 2, 3
+    while (modeButtons.length < 4) {
+      modeButtons.push(
+        <div className="placeholder"><style jsx>{styles}</style></div>
+      )
+    }
+  }
+
   const digitButtons = []
 
-  let modeGroup = getModeGroup(game.mode)
   if (modeGroup === 0) {
     if (game.mode !== MODE_COLOUR) {
       for (let i = 1; i <= 10; ++i) {
@@ -164,44 +228,19 @@ const Pad = () => {
       <Button noPadding onClick={onRedo}>
         <Redo size="1.05rem" />
       </Button>
-      {modeGroup === 0 && (
-        <Button active={game.mode === MODE_NORMAL}
-            noPadding onClick={() => onMode(MODE_NORMAL)}>
-          <div className="label-container">Normal</div>
-        </Button>
-      ) || (
-        <Button active={game.mode === MODE_PEN}
-            noPadding onClick={() => onMode(MODE_PEN)}>
-          <div className="label-container">Pen</div>
-        </Button>
-      )}
+      {modeButtons[0]}
       {digitButtons[0]}
       {digitButtons[1]}
       {digitButtons[2]}
-      {modeGroup === 0 && (
-        <Button active={game.mode === MODE_CORNER} noPadding
-            onClick={() => onMode(MODE_CORNER)}>
-          <div className="label-container">Corner</div>
-        </Button>
-      ) || <div className="placeholder"></div>}
+      {modeButtons[1]}
       {digitButtons[3]}
       {digitButtons[4]}
       {digitButtons[5]}
-      {modeGroup === 0 && (
-        <Button active={game.mode === MODE_CENTRE} noPadding
-            onClick={() => game.mode !== onMode(MODE_CENTRE)}>
-          <div className="label-container">Centre</div>
-        </Button>
-      ) || <div className="placeholder"></div>}
+      {modeButtons[2]}
       {digitButtons[6]}
       {digitButtons[7]}
       {digitButtons[8]}
-      {modeGroup === 0 && (
-        <Button active={game.mode === MODE_COLOUR} noPadding
-            onClick={() => onMode(MODE_COLOUR)}>
-          <div className="label-container">Colour</div>
-        </Button>
-      ) || <div className="placeholder"></div>}
+      {modeButtons[3]}
       {game.mode !== MODE_COLOUR && (<>
         <div className="zero-button">
           {digitButtons[9]}

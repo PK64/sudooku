@@ -4,7 +4,7 @@ import { TYPE_MODE, TYPE_MODE_GROUP, TYPE_DIGITS, TYPE_CORNER_MARKS,
   TYPE_REDO, TYPE_INIT, TYPE_CHECK, TYPE_PAUSE, ACTION_ALL, ACTION_SET,
   ACTION_PUSH, ACTION_CLEAR, ACTION_REMOVE, ACTION_ROTATE, ACTION_RIGHT,
   ACTION_LEFT, ACTION_UP, ACTION_DOWN } from "../lib/Actions"
-import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_COLOUR, MODE_PEN, getModeGroup } from "../lib/Modes"
+import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN, MARKS_PLACEMENT_FIXED, getModeGroup } from "../lib/Modes"
 import { createContext, useReducer } from "react"
 import produce from "immer"
 import { isEqual } from "lodash"
@@ -59,6 +59,7 @@ function makeEmptyState(data) {
     digits: makeGivenDigits(data),
     cornerMarks: makeGivenMarks(data, "cornermarks"),
     centreMarks: makeGivenMarks(data, "centremarks"),
+    fixedMarks: makeGivenMarks(data, "cornermarks"),
     colours: new Map(),
     penLines: new Set(),
     selection: new Set(),
@@ -123,14 +124,18 @@ function modeReducer(draft, action) {
   }
 
   if (action.action === ACTION_ROTATE) {
+    let fixed = action.mode === MARKS_PLACEMENT_FIXED
     switch (newMode) {
       case MODE_NORMAL:
-        newMode = MODE_CORNER
+        newMode = fixed ? MODE_FIXED : MODE_CORNER
         break
       case MODE_CORNER:
         newMode = MODE_CENTRE
         break
       case MODE_CENTRE:
+        newMode = MODE_COLOUR
+        break
+      case MODE_FIXED:
         newMode = MODE_COLOUR
         break
       case MODE_COLOUR:
@@ -394,6 +399,10 @@ function gameReducerNoUndo(state, mode, action) {
           marksReducer(state.centreMarks, action,
             filterGivens(state.digits, state.selection))
           return
+        case MODE_FIXED:
+          marksReducer(state.fixedMarks, action,
+            filterGivens(state.digits, state.selection))
+          return
       }
       digitsReducer(state.digits, action,
         filterGivens(state.digits, state.selection))
@@ -418,6 +427,7 @@ function makeUndoState(state) {
     digits: state.digits,
     cornerMarks: state.cornerMarks,
     centreMarks: state.centreMarks,
+    fixedMarks: state.fixedMarks,
     colours: state.colours,
     penLines: state.penLines
   }
@@ -528,10 +538,14 @@ function gameReducer(state, action) {
             highest = MODE_CENTRE
           } else if (highest === MODE_COLOUR && draft.cornerMarks.has(sc)) {
             highest = MODE_CENTRE
+          } else if (highest === MODE_COLOUR && draft.fixedMarks.has(sc)) {
+            highest = MODE_FIXED
           }
         }
         if (highest === MODE_CENTRE) {
           gameReducerNoUndo(draft, MODE_CORNER, action)
+        } else if (highest === MODE_FIXED) {
+          gameReducerNoUndo(draft, MODE_FIXED, action)
         }
       }
       if (highest === MODE_COLOUR) {
