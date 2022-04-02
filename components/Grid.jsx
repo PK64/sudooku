@@ -2,7 +2,7 @@ import GameContext from "./contexts/GameContext"
 import SettingsContext from "./contexts/SettingsContext"
 import { TYPE_DIGITS, TYPE_PENLINES, TYPE_SELECTION, ACTION_CLEAR,
   ACTION_SET, ACTION_PUSH, ACTION_REMOVE } from "./lib/Actions"
-import { MARKS_PLACEMENT_FIXED, MARKS_PLACEMENT_DEFAULT, MODE_PEN } from "./lib/Modes"
+import { MARKS_PLACEMENT_FIXED, MARKS_PLACEMENT_DEFAULT, MODE_CHAIN, MODE_PEN } from "./lib/Modes"
 import { ktoxy, xytok, pltok } from "./lib/utils"
 import Color from "color"
 import polygonClipping from "polygon-clipping"
@@ -744,7 +744,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   }, [game.data])
 
   const selectCell = useCallback((cell, evt, append = false) => {
-    if (currentMode.current === MODE_PEN) {
+    if (currentMode.current === MODE_PEN || currentMode.current === MODE_CHAIN) {
       // do nothing in pen mode
       return
     }
@@ -998,7 +998,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     currentMode.current = game.mode
 
     if (app.current !== undefined) {
-      if (game.mode === MODE_PEN) {
+      if (game.mode === MODE_PEN || game.mode === MODE_CHAIN) {
         app.current.renderer.plugins.interaction.cursorStyles.pointer = "crosshair"
       } else {
         app.current.renderer.plugins.interaction.cursorStyles.pointer = "pointer"
@@ -1328,7 +1328,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     background.interactive = true
     background.zIndex = -1000
     background.on("pointerdown", () => {
-      if (currentMode.current !== MODE_PEN) {
+      if (currentMode.current !== MODE_PEN && currentMode.current !== MODE_CHAIN) {
         updateGame({
           type: TYPE_SELECTION,
           action: ACTION_CLEAR

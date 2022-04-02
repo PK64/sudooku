@@ -3,6 +3,7 @@ const MODE_NORMAL = "normal"
 const MODE_CORNER = "corner"
 const MODE_CENTRE = "centre"
 const MODE_FIXED = "fixed"
+const MODE_CHAIN = "chain"
 const MODE_COLOUR = "colour"
 
 // group 1
@@ -18,6 +19,7 @@ module.exports = {
   MODE_CORNER,
   MODE_CENTRE,
   MODE_FIXED,
+  MODE_CHAIN,
   MODE_COLOUR,
 
   // group 1
@@ -33,6 +35,7 @@ module.exports = {
       case MODE_CORNER:
       case MODE_CENTRE:
       case MODE_FIXED:
+      case MODE_CHAIN:
       case MODE_COLOUR:
         return 0
 

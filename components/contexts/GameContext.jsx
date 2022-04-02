@@ -5,7 +5,8 @@ import { TYPE_MODE, TYPE_MODE_GROUP, TYPE_DIGITS, TYPE_CORNER_MARKS,
   ACTION_PUSH, ACTION_CLEAR, ACTION_REMOVE, ACTION_ROTATE, ACTION_RIGHT,
   ACTION_LEFT, ACTION_UP, ACTION_DOWN, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
   TYPE_PAINT_MODE, ACTION_TOGGLE } from "../lib/Actions"
-import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN, MARKS_PLACEMENT_FIXED, getModeGroup } from "../lib/Modes"
+import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
+  MODE_CHAIN, MARKS_PLACEMENT_FIXED, getModeGroup } from "../lib/Modes"
 import { createContext, useReducer } from "react"
 import produce from "immer"
 import { isEqual } from "lodash"
@@ -163,6 +164,9 @@ function modeReducer(draft, action) {
         newMode = MODE_COLOUR
         break
       case MODE_FIXED:
+        newMode = MODE_CHAIN
+        break
+      case MODE_CHAIN:
         newMode = MODE_COLOUR
         break
       case MODE_COLOUR:

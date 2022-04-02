@@ -5,7 +5,7 @@ import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
   TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
   TYPE_PAINT_MODE, ACTION_TOGGLE } from "./lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
-  getModeGroup, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
+  getModeGroup, MODE_CHAIN, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
 import { Check, Delete, Redo, Undo } from "lucide-react"
 import Color from "color"
@@ -192,7 +192,7 @@ const Pad = () => {
         <ModeButton mode={MODE_FIXED} label="Pencil"></ModeButton>
       )
       modeButtons.push(
-        <div className="placeholder"><style jsx>{styles}</style></div>
+        <ModeButton mode={MODE_CHAIN} label="Chain"></ModeButton>
       )
     } else {
       modeButtons.push(
@@ -223,7 +223,7 @@ const Pad = () => {
 
   const digitButtons = []
 
-  if (modeGroup === 0) {
+  if (modeGroup === 0 && game.mode !== MODE_CHAIN) {
     if (game.mode !== MODE_COLOUR) {
       let paintDigit = 0
       if (game.paintMode.active) {
