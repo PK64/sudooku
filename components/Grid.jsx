@@ -1621,7 +1621,7 @@ const selectCell = useCallback((cell, evt, append = false) => {
 
     // create elements to visualize chain links
     let chainWaypoints = new PIXI.Graphics()
-    chainWaypoints.zIndex = 70
+    chainWaypoints.zIndex = 49
     chainWaypoints.data = {
       draw: function (cellSize) {
         this.cellSize = cellSize || this.cellSize
@@ -1631,21 +1631,34 @@ const selectCell = useCallback((cell, evt, append = false) => {
 
         let wps = chainCurrentWaypoints.current
         chainWaypoints.clear()
-        if (wps.length > 1) {
-          let color = 0xde3333
+        if (wps.length > 0) {
+          let wp0 = wps[0]
+          if (wps.length > 1) {
+            let color = 0xeece33
+            chainWaypoints.lineStyle({
+              width: 3 * SCALE_FACTOR,
+              alpha: 0.9,
+              color,
+              cap: PIXI.LINE_CAP.ROUND,
+              join: PIXI.LINE_JOIN.ROUND
+            })
+            chainWaypoints.moveTo(wp0.x, wp0.y)
+            for (let i = 0; i < wps.length - 1; ++i) {
+              let wp = wps[i + 1]
+              chainWaypoints.lineTo(wp.x, wp.y)
+            }
+            let wpe = wps[wps.length - 1]
+            chainWaypoints.lineStyle({
+              width: 3 * SCALE_FACTOR,
+              alpha: 0.75,
+              color: 0xde3333
+            }).drawCircle(wpe.x, wpe.y, this.cellSize / 6)
+          }
           chainWaypoints.lineStyle({
             width: 3 * SCALE_FACTOR,
-            color,
-            cap: PIXI.LINE_CAP.ROUND,
-            join: PIXI.LINE_JOIN.ROUND
-          })
-
-          let wp0 = wps[0]
-          chainWaypoints.moveTo(wp0.x, wp0.y)
-          for (let i = 0; i < wps.length - 1; ++i) {
-            let wp = wps[i + 1]
-            chainWaypoints.lineTo(wp.x, wp.y)
-          }
+            alpha: 0.75,
+            color: 0x0088ee
+          }).drawCircle(wp0.x, wp0.y, this.cellSize / 6)
         }
       }
     }
