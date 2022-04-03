@@ -354,6 +354,7 @@ function makeFixedMarks(x, y, cellSize, fontSize, n = 9, fontWeight = "normal") 
     })
 
     text.data = {
+      i,
       draw: function (cellSize) {
         let cx = x * cellSize + cellSize / 2
         let cy = y * cellSize + cellSize / 2 - 0.5
@@ -678,6 +679,8 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   const selectionElements = useRef([])
   const highlightElements = useRef([])
   const errorElements = useRef([])
+  const chainCurrentWaypoints = useRef([])
+  const chainCurrentWaypointsElements = useRef([])
   const penCurrentWaypoints = useRef([])
   const penCurrentWaypointsAdd = useRef(true)
   const penCurrentWaypointsElements = useRef([])
@@ -743,28 +746,53 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     }
   }, [game.data])
 
-  const selectCell = useCallback((cell, evt, append = false) => {
-    if (currentMode.current === MODE_PEN || currentMode.current === MODE_CHAIN) {
+const selectCell = useCallback((cell, evt, append = false) => {
+    if (currentMode.current === MODE_PEN) {
       // do nothing in pen mode
       return
     }
 
-    let action = append ? ACTION_PUSH : ACTION_SET
-    let oe = evt?.data?.originalEvent
-    if (oe?.metaKey || oe?.ctrlKey) {
-      if (oe?.shiftKey) {
-        action = ACTION_REMOVE
-      } else {
-        action = ACTION_PUSH
-      }
-    }
+    if (currentMode.current === MODE_CHAIN) {
+      let x = evt.data.global.x - cell.x
+      let y = evt.data.global.y - cell.y
+      let markX = Math.floor(x / cell.width * 3)
+      let markY = Math.floor(y / cell.height * 3)
+      let i = markX + markY * 3
+      let k = cell.data.k
 
-    updateGame({
-      type: TYPE_SELECTION,
-      action,
-      k: cell.data.k
-    })
-  }, [updateGame])
+      let ce = fixedMarkElements.current.find(e => e.data.k === k)
+      let fme = ce.elements[i]
+      if (fme.visible) {
+        let cwp = { k, x: fme.x, y: fme.y }
+        let ci = chainCurrentWaypoints.current.findIndex(p => p.x === cwp.x && p.y === cwp.y)
+        if (ci < 0) {
+          chainCurrentWaypoints.current.push(cwp)
+        } else if (ci === chainCurrentWaypoints.current.length - 1) {
+          chainCurrentWaypoints.current.pop()
+        }
+      }
+
+      // render waypoints
+      chainCurrentWaypointsElements.current.forEach(e => e.data.draw())
+      renderNow()
+    } else {
+      let action = append ? ACTION_PUSH : ACTION_SET
+      let oe = evt?.data?.originalEvent
+      if (oe?.metaKey || oe?.ctrlKey) {
+        if (oe?.shiftKey) {
+          action = ACTION_REMOVE
+        } else {
+          action = ACTION_PUSH
+        }
+      }
+
+      updateGame({
+        type: TYPE_SELECTION,
+        action,
+        k: cell.data.k
+      })
+    }
+  }, [updateGame, renderNow])
 
   const onPenMove = useCallback((e, cellSize) => {
     if (e.target === null) {
@@ -1591,6 +1619,39 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       })
     })
 
+    // create elements to visualize chain links
+    let chainWaypoints = new PIXI.Graphics()
+    chainWaypoints.zIndex = 70
+    chainWaypoints.data = {
+      draw: function (cellSize) {
+        this.cellSize = cellSize || this.cellSize
+        if (this.cellSize === undefined) {
+          return
+        }
+
+        let wps = chainCurrentWaypoints.current
+        chainWaypoints.clear()
+        if (wps.length > 1) {
+          let color = 0xde3333
+          chainWaypoints.lineStyle({
+            width: 3 * SCALE_FACTOR,
+            color,
+            cap: PIXI.LINE_CAP.ROUND,
+            join: PIXI.LINE_JOIN.ROUND
+          })
+
+          let wp0 = wps[0]
+          chainWaypoints.moveTo(wp0.x, wp0.y)
+          for (let i = 0; i < wps.length - 1; ++i) {
+            let wp = wps[i + 1]
+            chainWaypoints.lineTo(wp.x, wp.y)
+          }
+        }
+      }
+    }
+    all.addChild(chainWaypoints)
+    chainCurrentWaypointsElements.current.push(chainWaypoints)
+
     // create element that visualises current pen waypoints
     let penWaypoints = new PIXI.Graphics()
     penWaypoints.zIndex = 70
@@ -1678,6 +1739,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       selectionElements.current = []
       highlightElements.current = []
       errorElements.current = []
+      chainCurrentWaypointsElements.current = []
       penCurrentWaypointsElements.current = []
       penHitareaElements.current = []
       penLineElements.current = []
@@ -1707,7 +1769,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
         arrowHeadElements, extraRegionElements, underlayElements, overlayElements,
         givenCornerMarkElements, digitElements, centreMarkElements, colourElements,
         selectionElements, highlightElements, errorElements, penCurrentWaypointsElements,
-        penLineElements, penHitareaElements]
+        penLineElements, penHitareaElements, chainCurrentWaypointsElements]
       for (let r of elementsToRedraw) {
         for (let e of r.current) {
           if (e.clear !== undefined) {
