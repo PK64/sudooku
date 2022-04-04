@@ -63,6 +63,7 @@ function makeEmptyState(data) {
     colours: new Map(),
     penLines: new Set(),
     selection: new Set(),
+    highlightDigit: 0,
     errors: new Set(),
     undoStates: [],
     nextUndoState: 0,
@@ -329,6 +330,18 @@ function penLinesReducer(penLines, action) {
   }
 }
 
+function highlightSelectedDigit(state) {
+  if (state.selection.size === 1) {
+    let [sc] = state.selection
+    let digits = state.digits.get(sc)
+    if (digits !== undefined) {
+      state.highlightDigit = digits.digit
+      return
+    }
+  }
+  state.highlightDigit = 0
+}
+
 function selectionReducer(selection, action, cells = []) {
   switch (action.action) {
     case ACTION_ALL:
@@ -495,6 +508,7 @@ function gameReducerNoUndo(state, mode, action) {
       }
       digitsReducer(state.digits, state.fixedMarks, action,
         filterGivens(state.digits, state.selection))
+      highlightSelectedDigit(state)
       return
 
     case TYPE_COLOURS:
@@ -507,6 +521,7 @@ function gameReducerNoUndo(state, mode, action) {
 
     case TYPE_SELECTION:
       selectionReducer(state.selection, action, state.data?.cells)
+      highlightSelectedDigit(state)
       return
   }
 }

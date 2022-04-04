@@ -19,6 +19,7 @@
   --border-radius-mini: 4px;
   --digit: #{color.adjust(#2b3f77, $lightness: 20%)};
   --digit-small: #{color.adjust(#2b3f77, $lightness: 10%)};
+  --digit-highlight: #{color.adjust(#e35120, $lightness: 10%)};
   --button-hover: var(--grey-500);
   --button-active: var(--grey-500);
   --selection-yellow: #ffde2a;
@@ -43,6 +44,7 @@
   --alert: #bf616a;
   --digit: var(--primary);
   --digit-small: var(--primary-highlight);
+  --digit-highlight: #{color.adjust(#e35120, $lightness: 10%)};
   --button-hover: #{color.adjust(#434c5e, $lightness: 20%)};
   --button-active: #{color.adjust(#434c5e, $lightness: 20%)};
 }

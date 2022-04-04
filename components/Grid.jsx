@@ -507,6 +507,7 @@ function getThemeColours(elem) {
   let foregroundColor = getThemeColour(rootStyle, "--fg")
   let digitColor = getThemeColour(rootStyle, "--digit")
   let smallDigitColor = getThemeColour(rootStyle, "--digit-small")
+  let digitHighlight = getThemeColour(rootStyle, "--digit-highlight")
 
   let selectionYellow = getThemeColour(rootStyle, "--selection-yellow")
   let selectionRed = getThemeColour(rootStyle, "--selection-red")
@@ -518,6 +519,7 @@ function getThemeColours(elem) {
     foregroundColor,
     digitColor,
     smallDigitColor,
+    digitHighlight,
     selection: {
       yellow: selectionYellow,
       red: selectionRed,
@@ -674,6 +676,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   const fixedMarkElements = useRef([])
   const colourElements = useRef([])
   const selectionElements = useRef([])
+  const highlightElements = useRef([])
   const errorElements = useRef([])
   const penCurrentWaypoints = useRef([])
   const penCurrentWaypointsAdd = useRef(true)
@@ -1503,6 +1506,27 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       })
     })
 
+    // create invisible rectangles for highlights
+    game.data.cells.forEach((row, y) => {
+      row.forEach((col, x) => {
+        let rect = new PIXI.Graphics()
+        rect.visible = false
+        rect.zIndex = 20
+        rect.data = {
+          k: xytok(x, y),
+          draw: function (cellSize) {
+            rect.beginFill(0xbebebe, 0.5)
+            rect.drawRect(0.5, 0.5, cellSize - 1, cellSize - 1)
+            rect.endFill()
+            rect.x = x * cellSize
+            rect.y = y * cellSize
+          }
+        }
+        all.addChild(rect)
+        highlightElements.current.push(rect)
+      })
+    })
+
     // create invisible rectangles for errors
     game.data.cells.forEach((row, y) => {
       row.forEach((col, x) => {
@@ -1656,6 +1680,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       fixedMarkElements.current = []
       colourElements.current = []
       selectionElements.current = []
+      highlightElements.current = []
       errorElements.current = []
       penCurrentWaypointsElements.current = []
       penHitareaElements.current = []
@@ -1685,7 +1710,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
         cageLabelTextElements, cageLabelBackgroundElements, lineElements,
         arrowHeadElements, extraRegionElements, underlayElements, overlayElements,
         givenCornerMarkElements, digitElements, centreMarkElements, colourElements,
-        selectionElements, errorElements, penCurrentWaypointsElements,
+        selectionElements, highlightElements, errorElements, penCurrentWaypointsElements,
         penLineElements, penHitareaElements]
       for (let r of elementsToRedraw) {
         for (let e of r.current) {
@@ -1873,6 +1898,25 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   }, [game.selection, renderNow])
 
   useEffect(() => {
+    highlightElements.current.forEach(s => {
+      let visible = false
+      let digits = game.digits.get(s.data.k)
+      if (digits !== undefined) {
+        if (digits.digit === game.highlightDigit) {
+          visible = true
+        }
+      } else {
+        let marks = game.fixedMarks.get(s.data.k)
+        if (marks !== undefined && marks.has(game.highlightDigit)) {
+          visible = true
+        }
+      }
+      s.visible = visible
+    })
+    renderNow()
+  }, [game.highlightDigit, game.digits, game.fixedMarks, renderNow])
+
+  useEffect(() => {
     let themeColours = getThemeColours(ref.current)
     let cornerMarks = new Map()
     let centreMarks = new Map()
@@ -1922,7 +1966,8 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
             if (d > 0) {
               let n = d - 1
               e.elements[n].text = d
-              e.elements[n].style.fill = themeColours.smallDigitColor
+              e.elements[n].style.fill = (game.highlightDigit === d) ?
+                themeColours.digitHighlight : themeColours.smallDigitColor
               e.elements[n].visible = true
             }
           }
@@ -1935,7 +1980,11 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       let digit = game.digits.get(e.data.k)
       if (digit !== undefined) {
         e.text = digit.digit
-        e.style.fill = digit.given ? themeColours.foregroundColor : themeColours.digitColor
+        if (game.highlightDigit === digit.digit) {
+          e.style.fill = themeColours.digitHighlight
+        } else {
+          e.style.fill = digit.given ? themeColours.foregroundColor : themeColours.digitColor
+        }
         e.visible = true
 
         let com = cornerMarks.get(e.data.k)
@@ -2013,6 +2062,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       settings.fontSizeFactorDigits, settings.fontSizeFactorCentreMarks,
       settings.fontSizeFactorCornerMarks, maxWidth, maxHeight, portrait,
       settings.fontSizeFactorFixedMarks, settings.marksPlacement, game.fixedMarks,
+      game.highlightDigit,
       renderNow, game.mode])
 
   return (
