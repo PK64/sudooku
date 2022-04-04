@@ -196,13 +196,14 @@ function autofillMarksReducer(marks, digits, selection) {
   let regions = []
   let rows = []
   let cols = []
+  for (let i = 0; i < 9; i++) {
+    regions[i] = new Set()
+    rows[i] = new Set()
+    cols[i] = new Set()
+  }
   for (let [k, d] of digits) {
     let [x, y] = ktoxy(k)
     let r = Math.floor(y / 3) + Math.floor(x / 3) * 3
-    regions[r] = regions[r] || new Set()
-    rows[y] = rows[y] || new Set()
-    cols[x] = cols[x] || new Set()
-
     regions[r].add(d.digit)
     rows[y].add(d.digit)
     cols[x].add(d.digit)
