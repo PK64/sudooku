@@ -4,6 +4,7 @@ module.exports = {
   TYPE_DIGITS: "digits",
   TYPE_CORNER_MARKS: "cornerMarks",
   TYPE_CENTRE_MARKS: "centreMarks",
+  TYPE_AUTOFILL_MARKS: "autofillMarks",
   TYPE_COLOURS: "colours",
   TYPE_PENLINES: "penLines",
   TYPE_SELECTION: "selection",

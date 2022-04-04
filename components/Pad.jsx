@@ -2,7 +2,7 @@ import Button from "./Button"
 import SettingsContext from "./contexts/SettingsContext"
 import GameContext from "./contexts/GameContext"
 import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
-  TYPE_CHECK, ACTION_SET, ACTION_REMOVE } from "./lib/Actions"
+  TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS } from "./lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
   getModeGroup, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
@@ -129,6 +129,12 @@ const Pad = () => {
     })
   }
 
+  function onAutofillMarks() {
+    updateGame({
+      type: TYPE_AUTOFILL_MARKS
+    })
+  }
+
   let modeGroup = getModeGroup(game.mode)
 
   const modeButtons = []
@@ -243,7 +249,9 @@ const Pad = () => {
       {modeButtons[3]}
       {game.mode !== MODE_COLOUR && (<>
         <div className="zero-button">
-          {digitButtons[9]}
+          <Button noPadding onClick={onAutofillMarks}>
+            <div className="label-container">Autofill Selection</div>
+          </Button>
         </div>
         <div className="placeholder">
         </div>

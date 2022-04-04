@@ -3,7 +3,7 @@ import { TYPE_MODE, TYPE_MODE_GROUP, TYPE_DIGITS, TYPE_CORNER_MARKS,
   TYPE_CENTRE_MARKS, TYPE_COLOURS, TYPE_PENLINES, TYPE_SELECTION, TYPE_UNDO,
   TYPE_REDO, TYPE_INIT, TYPE_CHECK, TYPE_PAUSE, ACTION_ALL, ACTION_SET,
   ACTION_PUSH, ACTION_CLEAR, ACTION_REMOVE, ACTION_ROTATE, ACTION_RIGHT,
-  ACTION_LEFT, ACTION_UP, ACTION_DOWN } from "../lib/Actions"
+  ACTION_LEFT, ACTION_UP, ACTION_DOWN, TYPE_AUTOFILL_MARKS } from "../lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN, MARKS_PLACEMENT_FIXED, getModeGroup } from "../lib/Modes"
 import { createContext, useReducer } from "react"
 import produce from "immer"
@@ -81,6 +81,28 @@ function filterGivens(digits, selection) {
     }
   }
   return r
+}
+
+function cellsImpactedByDigit(selection) {
+  let impactedCells = new Set()
+  for (let sc of selection) {
+    let [x, y] = ktoxy(sc)
+    let rx = Math.floor(x / 3) * 3
+    let ry = Math.floor(y / 3) * 3
+    let regionOffsets = [
+      [0, 0], [1, 0], [2, 0],
+      [0, 1], [1, 1], [2, 1],
+      [0, 2], [1, 2], [2, 2]
+    ]
+    for (let offset of regionOffsets) {
+      impactedCells.add(xytok(rx + offset[0], ry + offset[1]))
+    }
+    for (let i = 0; i < 9; i++) {
+      impactedCells.add(xytok(x, i))
+      impactedCells.add(xytok(i, y))
+    }
+  }
+  return impactedCells
 }
 
 function modeReducer(draft, action) {
@@ -169,6 +191,35 @@ function modeGroupReducer(draft, action) {
   }
 }
 
+function autofillMarksReducer(marks, digits, selection) {
+  let regions = []
+  let rows = []
+  let cols = []
+  for (let [k, d] of digits) {
+    let [x, y] = ktoxy(k)
+    let r = Math.floor(y / 3) + Math.floor(x / 3) * 3
+    regions[r] = regions[r] || new Set()
+    rows[y] = rows[y] || new Set()
+    cols[x] = cols[x] || new Set()
+
+    regions[r].add(d.digit)
+    rows[y].add(d.digit)
+    cols[x].add(d.digit)
+  }
+
+  for (let sc of selection) {
+    let [x, y] = ktoxy(sc)
+    let r = Math.floor(y / 3) + Math.floor(x / 3) * 3
+    let digits = new Set()
+    for (let d = 1; d <= 9; d++) {
+      if (! (regions[r].has(d) || rows[y].has(d) || cols[x].has(d))) {
+        digits.add(d)
+      }
+    }
+    marks.set(sc, digits)
+  }
+}
+
 function marksReducer(marks, action, selection) {
   switch (action.action) {
     case ACTION_SET: {
@@ -191,20 +242,53 @@ function marksReducer(marks, action, selection) {
     }
 
     case ACTION_REMOVE: {
-      for (let sc of selection) {
-        marks.delete(sc)
+      if (action.digit !== undefined) {
+        for (let sc of selection) {
+          let digits = marks.get(sc)
+          if (digits !== undefined && digits.has(action.digit)) {
+            digits.delete(action.digit)
+          }
+        }
+      } else {
+        for (let sc of selection) {
+          marks.delete(sc)
+        }
       }
       break
     }
   }
 }
 
-function digitsReducer(digits, action, selection, attrName = "digit") {
+function digitsReducer(digits, marks, action, selection) {
   switch (action.action) {
     case ACTION_SET: {
       for (let sc of selection) {
         digits.set(sc, {
-          [attrName]: action.digit
+          digit: action.digit
+        })
+      }
+      marksReducer(marks, {
+        action: ACTION_REMOVE,
+        digit: action.digit
+      }, cellsImpactedByDigit(selection))
+      break
+    }
+
+    case ACTION_REMOVE: {
+      for (let sc of selection) {
+        digits.delete(sc)
+      }
+      break
+    }
+  }
+}
+
+function coloursReducer(digits, action, selection) {
+  switch (action.action) {
+    case ACTION_SET: {
+      for (let sc of selection) {
+        digits.set(sc, {
+          colour: action.digit
         })
       }
       break
@@ -389,6 +473,11 @@ function gameReducerNoUndo(state, mode, action) {
       modeGroupReducer(state, action)
       return
 
+    case TYPE_AUTOFILL_MARKS:
+      autofillMarksReducer(state.fixedMarks, state.digits,
+        filterGivens(state.digits, state.selection))
+      return
+
     case TYPE_DIGITS:
       switch (mode) {
         case MODE_CORNER:
@@ -404,12 +493,12 @@ function gameReducerNoUndo(state, mode, action) {
             filterGivens(state.digits, state.selection))
           return
       }
-      digitsReducer(state.digits, action,
+      digitsReducer(state.digits, state.fixedMarks, action,
         filterGivens(state.digits, state.selection))
       return
 
     case TYPE_COLOURS:
-      digitsReducer(state.colours, action, state.selection, "colour")
+      coloursReducer(state.colours, action, state.selection)
       return
 
     case TYPE_PENLINES:
