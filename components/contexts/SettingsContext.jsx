@@ -45,7 +45,7 @@ const Provider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, {
     colourPalette: "default",
     theme: "default",
-    marksPlacement: "default",
+    marksPlacement: "fixed",
     selectionColour: "yellow",
     customColours: [],
     zoom: 1,

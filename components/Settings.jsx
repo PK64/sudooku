@@ -4,7 +4,7 @@ import RangeSlider from "./RangeSlider"
 import SettingsContext from "./contexts/SettingsContext"
 import { useContext, useEffect, useRef, useState } from "react"
 import styles from "./Settings.scss"
-import { MARKS_PLACEMENT_FIXED } from "./lib/Modes"
+import { MARKS_PLACEMENT_DEFAULT, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 
 const Settings = () => {
   const settings = useContext(SettingsContext.State)
@@ -127,7 +127,7 @@ const Settings = () => {
     }]} onChange={onChangeTheme} />
 
     <h3>Pencil Mark Placement</h3>
-    <RadioGroup name="marksPlacement" value={settings.marksPlacement} options={[{
+    <RadioGroup name="marksPlacement" value={marksPlacementInternal} options={[{
       id: "default",
       label: "Corner and Centre"
     }, {
@@ -172,7 +172,7 @@ const Settings = () => {
         onChange={onChangeFontSizeDigits}
         valueToDescription={fontSizeValueToDescription} />
     </div>
-    {settings.marksPlacement === "default" &&
+    {settings.marksPlacement === MARKS_PLACEMENT_DEFAULT &&
     (
       <div>
         <div className="slider">
