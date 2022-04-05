@@ -389,6 +389,7 @@ function paintModeReducer(state, action) {
   }
   if (state.paintMode.active) {
     state.highlightDigit = state.paintMode.digit
+    state.selection.clear()
   }
 }
 
