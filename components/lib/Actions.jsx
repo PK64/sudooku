@@ -13,6 +13,7 @@ module.exports = {
   TYPE_INIT: "init",
   TYPE_CHECK: "check",
   TYPE_PAUSE: "pause",
+  TYPE_SET_GIVEN: "setGiven",
 
   ACTION_ALL: "all",
   ACTION_SET: "set",

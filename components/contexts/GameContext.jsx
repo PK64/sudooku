@@ -3,7 +3,7 @@ import { TYPE_MODE, TYPE_MODE_GROUP, TYPE_DIGITS, TYPE_CORNER_MARKS,
   TYPE_CENTRE_MARKS, TYPE_COLOURS, TYPE_PENLINES, TYPE_SELECTION, TYPE_UNDO,
   TYPE_REDO, TYPE_INIT, TYPE_CHECK, TYPE_PAUSE, ACTION_ALL, ACTION_SET,
   ACTION_PUSH, ACTION_CLEAR, ACTION_REMOVE, ACTION_ROTATE, ACTION_RIGHT,
-  ACTION_LEFT, ACTION_UP, ACTION_DOWN, TYPE_AUTOFILL_MARKS } from "../lib/Actions"
+  ACTION_LEFT, ACTION_UP, ACTION_DOWN, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN } from "../lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN, MARKS_PLACEMENT_FIXED, getModeGroup } from "../lib/Modes"
 import { createContext, useReducer } from "react"
 import produce from "immer"
@@ -582,6 +582,18 @@ function gameReducer(state, action) {
       }
 
       return makeEmptyState(canonicalData)
+    }
+
+    if (action.type === TYPE_SET_GIVEN) {
+      let cellDigits = new Array(81).fill(0)
+      for (let [k, digits] of state.digits) {
+        let [x, y] = ktoxy(k)
+        let cellIndex = x + y * 9
+        cellDigits[cellIndex] = digits.digit
+      }
+      let givenString = cellDigits.join("")
+      window.location = "/?given=" + givenString
+      return
     }
 
     if (action.type !== TYPE_PAUSE && state.paused) {

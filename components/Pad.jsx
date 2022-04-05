@@ -2,7 +2,7 @@ import Button from "./Button"
 import SettingsContext from "./contexts/SettingsContext"
 import GameContext from "./contexts/GameContext"
 import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
-  TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS } from "./lib/Actions"
+  TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN } from "./lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
   getModeGroup, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
@@ -38,6 +38,7 @@ const Pad = () => {
   const updateGame = useContext(GameContext.Dispatch)
   const [colours, setColours] = useState([])
   const [checkReady, setCheckReady] = useState(false)
+  const [givenDigitCount, setGivenDigitCount] = useState(0)
   const [digitCount, setDigitCount] = useState([])
 
   useEffect(() => {
@@ -83,9 +84,14 @@ const Pad = () => {
 
   useEffect(() => {
     let count = [ -1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+    let givenDigits = 0
     for (let digits of game.digits.values()) {
       count[digits.digit]++
+      if (digits.given) {
+        givenDigits++
+      }
     }
+    setGivenDigitCount(givenDigits)
     setDigitCount(count)
   }, [game.digits])
 
@@ -141,6 +147,12 @@ const Pad = () => {
   function onAutofillMarks() {
     updateGame({
       type: TYPE_AUTOFILL_MARKS
+    })
+  }
+
+  function onSetGiven() {
+    updateGame({
+      type: TYPE_SET_GIVEN
     })
   }
 
@@ -236,6 +248,27 @@ const Pad = () => {
     }
   }
 
+  let zeroButton
+  if (givenDigitCount === 0) {
+    zeroButton = (
+      <div className="zero-button">
+        <Button noPadding onClick={onSetGiven}>
+          <div className="label-container">Set Given</div>
+        </Button>
+        <style jsx>{styles}</style>
+      </div>
+    )
+  } else {
+    zeroButton = (
+      <div className="zero-button">
+        <Button noPadding onClick={onAutofillMarks}>
+          <div className="label-container">Autofill Selection</div>
+        </Button>
+        <style jsx>{styles}</style>
+      </div>
+    )
+  }
+
   return (
     <div className={classNames("pad", `mode-${game.mode}`)} ref={ref}>
       <Button noPadding onClick={onDelete}>
@@ -263,11 +296,7 @@ const Pad = () => {
       {digitButtons[8]}
       {modeButtons[3]}
       {game.mode !== MODE_COLOUR && (<>
-        <div className="zero-button">
-          <Button noPadding onClick={onAutofillMarks}>
-            <div className="label-container">Autofill Selection</div>
-          </Button>
-        </div>
+        {zeroButton}
         <div className="placeholder">
         </div>
       </>)}
