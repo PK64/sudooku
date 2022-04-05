@@ -14,6 +14,7 @@ module.exports = {
   TYPE_CHECK: "check",
   TYPE_PAUSE: "pause",
   TYPE_SET_GIVEN: "setGiven",
+  TYPE_PAINT_MODE: "paintMode",
 
   ACTION_ALL: "all",
   ACTION_SET: "set",
@@ -21,6 +22,7 @@ module.exports = {
   ACTION_CLEAR: "clear",
   ACTION_REMOVE: "remove",
   ACTION_ROTATE: "rotate",
+  ACTION_TOGGLE: "toggle",
   ACTION_RIGHT: "right",
   ACTION_LEFT: "left",
   ACTION_UP: "up",

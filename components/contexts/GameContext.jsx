@@ -3,7 +3,8 @@ import { TYPE_MODE, TYPE_MODE_GROUP, TYPE_DIGITS, TYPE_CORNER_MARKS,
   TYPE_CENTRE_MARKS, TYPE_COLOURS, TYPE_PENLINES, TYPE_SELECTION, TYPE_UNDO,
   TYPE_REDO, TYPE_INIT, TYPE_CHECK, TYPE_PAUSE, ACTION_ALL, ACTION_SET,
   ACTION_PUSH, ACTION_CLEAR, ACTION_REMOVE, ACTION_ROTATE, ACTION_RIGHT,
-  ACTION_LEFT, ACTION_UP, ACTION_DOWN, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN } from "../lib/Actions"
+  ACTION_LEFT, ACTION_UP, ACTION_DOWN, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
+  TYPE_PAINT_MODE, ACTION_TOGGLE } from "../lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN, MARKS_PLACEMENT_FIXED, getModeGroup } from "../lib/Modes"
 import { createContext, useReducer } from "react"
 import produce from "immer"
@@ -64,6 +65,7 @@ function makeEmptyState(data) {
     penLines: new Set(),
     selection: new Set(),
     highlightDigit: 0,
+    paintMode: { active: false, digit: 0 },
     errors: new Set(),
     undoStates: [],
     nextUndoState: 0,
@@ -296,6 +298,28 @@ function digitsReducer(digits, marks, action, selection) {
   }
 }
 
+function digitsModeReducer(state, mode, action) {
+  switch (mode) {
+    case MODE_CORNER:
+      marksReducer(state.cornerMarks, action,
+        filterGivens(state.digits, state.selection))
+      return
+    case MODE_CENTRE:
+      marksReducer(state.centreMarks, action,
+        filterGivens(state.digits, state.selection))
+      return
+    case MODE_FIXED:
+      marksReducer(state.fixedMarks, action,
+        filterGivens(state.digits, state.selection))
+      return
+    case MODE_COLOUR:
+      return
+  }
+  digitsReducer(state.digits, state.fixedMarks, action,
+    filterGivens(state.digits, state.selection))
+  highlightSelectedDigit(state)
+}
+
 function coloursReducer(digits, action, selection) {
   switch (action.action) {
     case ACTION_SET: {
@@ -352,6 +376,20 @@ function highlightSelectedDigit(state) {
     }
   }
   state.highlightDigit = 0
+}
+
+function paintModeReducer(state, action) {
+  switch (action.action) {
+    case ACTION_TOGGLE:
+      state.paintMode.active = !state.paintMode.active
+      break
+    case ACTION_SET:
+      state.paintMode.digit = action.digit
+      break
+  }
+  if (state.paintMode.active) {
+    state.highlightDigit = state.paintMode.digit
+  }
 }
 
 function selectionReducer(selection, action, cells = []) {
@@ -498,6 +536,10 @@ function gameReducerNoUndo(state, mode, action) {
       modeGroupReducer(state, action)
       return
 
+    case TYPE_PAINT_MODE:
+      paintModeReducer(state, action)
+      return
+
     case TYPE_AUTOFILL_MARKS:
       autofillMarksReducer(state.fixedMarks, state.digits,
         filterGivens(state.digits, state.selection),
@@ -505,23 +547,11 @@ function gameReducerNoUndo(state, mode, action) {
       return
 
     case TYPE_DIGITS:
-      switch (mode) {
-        case MODE_CORNER:
-          marksReducer(state.cornerMarks, action,
-            filterGivens(state.digits, state.selection))
-          return
-        case MODE_CENTRE:
-          marksReducer(state.centreMarks, action,
-            filterGivens(state.digits, state.selection))
-          return
-        case MODE_FIXED:
-          marksReducer(state.fixedMarks, action,
-            filterGivens(state.digits, state.selection))
-          return
+      if (state.paintMode.active && action.action === ACTION_SET) {
+        paintModeReducer(state, action)
+      } else {
+        digitsModeReducer(state, mode, action)
       }
-      digitsReducer(state.digits, state.fixedMarks, action,
-        filterGivens(state.digits, state.selection))
-      highlightSelectedDigit(state)
       return
 
     case TYPE_COLOURS:
@@ -534,7 +564,11 @@ function gameReducerNoUndo(state, mode, action) {
 
     case TYPE_SELECTION:
       selectionReducer(state.selection, action, state.data?.cells)
-      highlightSelectedDigit(state)
+      if (state.paintMode.active && action.action === ACTION_SET) {
+        digitsModeReducer(state, mode, { digit: state.paintMode.digit, ...action })
+      } else {
+        highlightSelectedDigit(state)
+      }
       return
   }
 }

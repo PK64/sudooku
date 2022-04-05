@@ -2,7 +2,8 @@ import Button from "./Button"
 import SettingsContext from "./contexts/SettingsContext"
 import GameContext from "./contexts/GameContext"
 import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
-  TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN } from "./lib/Actions"
+  TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
+  TYPE_PAINT_MODE, ACTION_TOGGLE } from "./lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
   getModeGroup, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
@@ -83,17 +84,35 @@ const Pad = () => {
   }, [game.data, game.digits])
 
   useEffect(() => {
-    let count = [ -1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+    let digitCount = [ -1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
     let givenDigits = 0
     for (let digits of game.digits.values()) {
-      count[digits.digit]++
+      digitCount[digits.digit]++
       if (digits.given) {
         givenDigits++
       }
     }
     setGivenDigitCount(givenDigits)
-    setDigitCount(count)
-  }, [game.digits])
+    setDigitCount(digitCount)
+
+    if (game.paintMode.active && digitCount[game.paintMode.digit] === 9) {
+      let nextDigit = 0
+      let initialDigit = game.paintMode.digit
+      for (let i = (initialDigit + 1) % 10; i !== initialDigit; i = (i + 1) % 10) {
+        if (i !== 0) {
+          if (digitCount[i] !== 9) {
+            nextDigit = i
+            break
+          }
+        }
+      }
+      updateGame({
+        type: TYPE_PAINT_MODE,
+        action: ACTION_SET,
+        digit: nextDigit
+      })
+    }
+  }, [game.digits, updateGame, game.paintMode])
 
   function onDigit(digit) {
     updateGame({
@@ -156,6 +175,13 @@ const Pad = () => {
     })
   }
 
+  function onTogglePaintMode() {
+    updateGame({
+      type: TYPE_PAINT_MODE,
+      action: ACTION_TOGGLE
+    })
+  }
+
   let modeGroup = getModeGroup(game.mode)
 
   const modeButtons = []
@@ -205,11 +231,16 @@ const Pad = () => {
 
   if (modeGroup === 0) {
     if (game.mode !== MODE_COLOUR) {
+      let paintDigit = 0
+      if (game.paintMode.active) {
+        paintDigit = game.paintMode.digit
+      }
       for (let i = 1; i <= 10; ++i) {
         let digit = i % 10
         let remaining = 9 - digitCount[digit]
+        let disabled = (game.paintMode.active && remaining === 0)
         digitButtons.push(
-          <Button key={i} noPadding onClick={() => onDigit(digit)}>
+          <Button key={i} noPadding active={digit === paintDigit} onClick={() => onDigit(digit)} disabled={disabled}>
             <div className={classNames("digit-container", `digit-${digit}`)}>
               <div>
                 {digit}
@@ -297,8 +328,10 @@ const Pad = () => {
       {modeButtons[3]}
       {game.mode !== MODE_COLOUR && (<>
         {zeroButton}
-        <div className="placeholder">
-        </div>
+        <Button active={game.paintMode.active}
+          noPadding onClick={() => onTogglePaintMode()}>
+          <div className="label-container">Paint</div>
+        </Button>
       </>)}
       {game.mode === MODE_COLOUR && (<>
         {digitButtons[9]}

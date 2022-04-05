@@ -2,25 +2,31 @@ import { useState } from "react"
 import classNames from "classnames"
 import styles from "./Button.scss"
 
-const Button = ({ active = false, onClick, noPadding = false, pulsating = false, children }) => {
+const Button = ({ active = false, onClick, noPadding = false, disabled = false, pulsating = false, children }) => {
   const [pressed, setPressed] = useState(false)
 
   function onClickInternal(e) {
-    if (onClick !== undefined) {
-      onClick(e)
+    if (!disabled) {
+      if (onClick !== undefined) {
+        onClick(e)
+      }
+      e.stopPropagation()
     }
-    e.stopPropagation()
   }
 
   function onMouseDown() {
-    setPressed(true)
+    if (!disabled) {
+      setPressed(true)
+    }
   }
 
   function onMouseUp() {
-    setPressed(false)
+    if (!disabled) {
+      setPressed(false)
+    }
   }
 
-  return <div tabIndex="0" className={classNames("button", { active, pressed, "no-padding": noPadding, pulsating })}
+  return <div tabIndex="0" className={classNames("button", { active, pressed, disabled, "no-padding": noPadding, pulsating })}
       onClick={onClickInternal} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
     {children}
     <style jsx>{styles}</style>
