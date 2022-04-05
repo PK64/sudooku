@@ -31,8 +31,10 @@
     outline: none;
   }
 
-  &:hover {
-    background-color: var(--button-hover);
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--button-hover);
+    }
   }
 
   &.active {
@@ -49,8 +51,10 @@
   &.disabled {
     opacity: 0.25;
 
-    &:hover {
-      background-color: var(--grey-700);
+    @media (hover: hover) {
+      &:hover {
+        background-color: var(--grey-700);
+      }
     }
   }
 
