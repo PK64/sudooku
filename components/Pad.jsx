@@ -195,15 +195,16 @@ const Pad = () => {
     if (game.mode !== MODE_COLOUR) {
       for (let i = 1; i <= 10; ++i) {
         let digit = i % 10
+        let remaining = 9 - digitCount[digit]
         digitButtons.push(
           <Button key={i} noPadding onClick={() => onDigit(digit)}>
             <div className={classNames("digit-container", `digit-${digit}`)}>
               <div>
                 {digit}
               </div>
-              {game.mode === MODE_NORMAL && (
+              {(game.mode === MODE_NORMAL && !isNaN(remaining)) && (
               <div className="digit-remaining">
-                {9 - digitCount[digit]}
+                {remaining}
               </div>
               )}
             </div>
