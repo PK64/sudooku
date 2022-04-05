@@ -51,13 +51,15 @@ function makeGivenMarks(data, srcAttr) {
 }
 
 function makeEmptyState(data) {
+  let givenDigits = makeGivenDigits(data)
   return {
     data,
     mode: MODE_NORMAL,
     modeGroup: 0,
     enabledModes0: [MODE_NORMAL],
     enabledModes1: [MODE_PEN],
-    digits: makeGivenDigits(data),
+    digits: givenDigits,
+    givenDigitsCount: givenDigits.size,
     cornerMarks: makeGivenMarks(data, "cornermarks"),
     centreMarks: makeGivenMarks(data, "centremarks"),
     fixedMarks: makeGivenMarks(data, "cornermarks"),

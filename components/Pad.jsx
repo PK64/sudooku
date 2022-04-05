@@ -39,7 +39,6 @@ const Pad = () => {
   const updateGame = useContext(GameContext.Dispatch)
   const [colours, setColours] = useState([])
   const [checkReady, setCheckReady] = useState(false)
-  const [givenDigitCount, setGivenDigitCount] = useState(0)
   const [digitCount, setDigitCount] = useState([])
 
   useEffect(() => {
@@ -85,14 +84,9 @@ const Pad = () => {
 
   useEffect(() => {
     let digitCount = [ -1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-    let givenDigits = 0
     for (let digits of game.digits.values()) {
       digitCount[digits.digit]++
-      if (digits.given) {
-        givenDigits++
-      }
     }
-    setGivenDigitCount(givenDigits)
     setDigitCount(digitCount)
 
     if (game.paintMode.active && digitCount[game.paintMode.digit] === 9) {
@@ -280,7 +274,7 @@ const Pad = () => {
   }
 
   let zeroButton
-  if (givenDigitCount === 0) {
+  if (game.givenDigitsCount === 0) {
     zeroButton = (
       <div className="zero-button">
         <Button noPadding onClick={onSetGiven}>
