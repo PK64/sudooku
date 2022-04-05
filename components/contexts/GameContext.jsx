@@ -192,7 +192,7 @@ function modeGroupReducer(draft, action) {
   }
 }
 
-function autofillMarksReducer(marks, digits, selection) {
+function autofillMarksReducer(marks, digits, selection, cells = []) {
   let regions = []
   let rows = []
   let cols = []
@@ -209,16 +209,27 @@ function autofillMarksReducer(marks, digits, selection) {
     cols[x].add(d.digit)
   }
 
+  if (selection.length === 0) {
+    cells.forEach((row, y) => {
+      row.forEach((col, x) => {
+        let k = xytok(x, y)
+        if (! (marks.has(k) || digits.has(k))) {
+          selection.push(k)
+        }
+      })
+    })
+  }
+
   for (let sc of selection) {
     let [x, y] = ktoxy(sc)
     let r = Math.floor(y / 3) + Math.floor(x / 3) * 3
-    let digits = new Set()
+    let autoDigits = new Set()
     for (let d = 1; d <= 9; d++) {
       if (! (regions[r].has(d) || rows[y].has(d) || cols[x].has(d))) {
-        digits.add(d)
+        autoDigits.add(d)
       }
     }
-    marks.set(sc, digits)
+    marks.set(sc, autoDigits)
   }
 }
 
@@ -489,7 +500,8 @@ function gameReducerNoUndo(state, mode, action) {
 
     case TYPE_AUTOFILL_MARKS:
       autofillMarksReducer(state.fixedMarks, state.digits,
-        filterGivens(state.digits, state.selection))
+        filterGivens(state.digits, state.selection),
+        state.data?.cells)
       return
 
     case TYPE_DIGITS:
