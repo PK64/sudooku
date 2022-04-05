@@ -32,7 +32,7 @@
 }
 
 .digit-container {
-  font-size: 1.15rem;
+  font-size: 1.5rem;
 }
 
 .colour-container {
@@ -57,6 +57,16 @@
   background-color: var(--grey-700);
   border-radius: var(--border-radius);
   opacity: 0.5;
+}
+
+.mode-normal {
+  .digit-remaining {
+    position: absolute;
+    color: var(--digit-highlight);
+    font-size: 0.55rem;
+    top: 0rem;
+    right: 0.1rem;
+  }
 }
 
 .mode-centre {

@@ -38,6 +38,7 @@ const Pad = () => {
   const updateGame = useContext(GameContext.Dispatch)
   const [colours, setColours] = useState([])
   const [checkReady, setCheckReady] = useState(false)
+  const [digitCount, setDigitCount] = useState([])
 
   useEffect(() => {
     let computedStyle = getComputedStyle(ref.current)
@@ -79,6 +80,14 @@ const Pad = () => {
       setCheckReady(nCells === game.digits.size)
     }
   }, [game.data, game.digits])
+
+  useEffect(() => {
+    let count = [ -1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+    for (let digits of game.digits.values()) {
+      count[digits.digit]++
+    }
+    setDigitCount(count)
+  }, [game.digits])
 
   function onDigit(digit) {
     updateGame({
@@ -192,6 +201,11 @@ const Pad = () => {
               <div>
                 {digit}
               </div>
+              {game.mode === MODE_NORMAL && (
+              <div className="digit-remaining">
+                {9 - digitCount[digit]}
+              </div>
+              )}
             </div>
             <style jsx>{styles}</style>
           </Button>
