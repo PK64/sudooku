@@ -762,14 +762,12 @@ const selectCell = useCallback((cell, evt, append = false) => {
 
       let ce = fixedMarkElements.current.find(e => e.data.k === k)
       let fme = ce.elements[i]
-      if (fme.visible) {
-        let cwp = { k, x: fme.x, y: fme.y }
-        let ci = chainCurrentWaypoints.current.findIndex(p => p.x === cwp.x && p.y === cwp.y)
-        if (ci < 0) {
-          chainCurrentWaypoints.current.push(cwp)
-        } else if (ci === chainCurrentWaypoints.current.length - 1) {
-          chainCurrentWaypoints.current.pop()
-        }
+      let cwp = { k, x: fme.x, y: fme.y }
+      let ci = chainCurrentWaypoints.current.findIndex(p => p.x === cwp.x && p.y === cwp.y)
+      if (ci < 0 && fme.visible) {
+        chainCurrentWaypoints.current.push(cwp)
+      } else if (ci === chainCurrentWaypoints.current.length - 1) {
+        chainCurrentWaypoints.current.pop()
       }
 
       // render waypoints
