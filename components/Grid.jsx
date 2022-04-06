@@ -1620,6 +1620,10 @@ const selectCell = useCallback((cell, evt, append = false) => {
     chainWaypoints.zIndex = 49
     chainWaypoints.data = {
       waypoints: [],
+      lineColor: 0xddbd22,
+      altLineColor: 0xcc7c11,
+      headColor: 0x0088ee,
+      tailColor: 0xde3333,
       draw: function (cellSize) {
         this.cellSize = cellSize || this.cellSize
         if (this.cellSize === undefined) {
@@ -1631,30 +1635,35 @@ const selectCell = useCallback((cell, evt, append = false) => {
         if (wps.length > 0) {
           let wp0 = wps[0]
           if (wps.length > 1) {
-            let color = 0xeece33
-            chainWaypoints.lineStyle({
-              width: 3 * SCALE_FACTOR,
-              alpha: 0.9,
-              color,
-              cap: PIXI.LINE_CAP.ROUND,
-              join: PIXI.LINE_JOIN.ROUND
-            })
             chainWaypoints.moveTo(wp0.x, wp0.y)
-            for (let i = 0; i < wps.length - 1; ++i) {
-              let wp = wps[i + 1]
+            for (let i = 1; i < wps.length; ++i) {
+              let wp = wps[i]
+              let color = (i % 2 === 1) ? this.lineColor : this.altLineColor
+              chainWaypoints.lineStyle({
+                width: 3 * SCALE_FACTOR,
+                alpha: 0.75,
+                color,
+                cap: PIXI.LINE_CAP.ROUND,
+                join: PIXI.LINE_JOIN.ROUND
+              })
               chainWaypoints.lineTo(wp.x, wp.y)
-            }
+              chainWaypoints.lineStyle({
+                width: 3 * SCALE_FACTOR,
+                alpha: 0.9,
+                color: color
+              }).drawCircle(wp.x, wp.y, this.cellSize / 6)
+              }
             let wpe = wps[wps.length - 1]
             chainWaypoints.lineStyle({
               width: 3 * SCALE_FACTOR,
-              alpha: 0.75,
-              color: 0xde3333
+              alpha: 0.9,
+              color: this.tailColor
             }).drawCircle(wpe.x, wpe.y, this.cellSize / 6)
           }
           chainWaypoints.lineStyle({
             width: 3 * SCALE_FACTOR,
-            alpha: 0.75,
-            color: 0x0088ee
+            alpha: 0.9,
+            color: this.headColor
           }).drawCircle(wp0.x, wp0.y, this.cellSize / 6)
         }
       }
