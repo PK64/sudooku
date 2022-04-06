@@ -13,6 +13,9 @@ function chainReducer(state, action) {
         let i = action.data.i
         let cell = action.data.marks.find(e => e.data.k === k)
         let mark = cell.elements[i]
+        if (mark === undefined) {
+          return
+        }
         let ci = draft.waypoints.findIndex(wp => wp.k === k && wp.i === i)
         if (ci < 0 && mark.visible) {
           draft.waypoints.push({ k, i, x: mark.x, y: mark.y })

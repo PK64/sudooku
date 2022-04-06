@@ -755,6 +755,9 @@ const selectCell = useCallback((cell, evt, append = false) => {
     }
 
     if (currentMode.current === MODE_CHAIN) {
+      if (evt.data.global === undefined) {
+        return
+      }
       let x = evt.data.global.x - cell.x
       let y = evt.data.global.y - cell.y
       let markX = Math.floor(x / cell.width * 3)
