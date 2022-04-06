@@ -18,6 +18,8 @@ function chainReducer(state, action) {
           draft.waypoints.push({ k, i, x: mark.x, y: mark.y })
         } else if (ci === draft.waypoints.length - 1) {
           draft.waypoints.pop()
+        } else if (ci === 0) {
+          draft.waypoints.reverse()
         }
         return
       }
