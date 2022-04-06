@@ -1,6 +1,7 @@
 import GameContext from "../components/contexts/GameContext"
 import SettingsContext from "../components/contexts/SettingsContext"
 import SidebarContext from "../components/contexts/SidebarContext"
+import ChainContext from "../components/contexts/ChainContext"
 import styles from "./_app.scss?type=global"
 import MatomoTracker from "@datapunt/matomo-tracker-js"
 import { enableAllPlugins } from "immer"
@@ -24,11 +25,13 @@ const App = ({ Component, pageProps }) => {
 
   return (<>
     <GameContext.Provider>
-      <SettingsContext.Provider>
-        <SidebarContext.Provider>
-          <Component {...pageProps} />
-        </SidebarContext.Provider>
-      </SettingsContext.Provider>
+      <ChainContext.Provider>
+        <SettingsContext.Provider>
+          <SidebarContext.Provider>
+            <Component {...pageProps} />
+          </SidebarContext.Provider>
+        </SettingsContext.Provider>
+      </ChainContext.Provider>
     </GameContext.Provider>
     <style jsx>{styles}</style>
   </>)

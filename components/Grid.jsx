@@ -1,7 +1,8 @@
 import GameContext from "./contexts/GameContext"
 import SettingsContext from "./contexts/SettingsContext"
+import ChainContext from "./contexts/ChainContext"
 import { TYPE_DIGITS, TYPE_PENLINES, TYPE_SELECTION, ACTION_CLEAR,
-  ACTION_SET, ACTION_PUSH, ACTION_REMOVE } from "./lib/Actions"
+  ACTION_SET, ACTION_PUSH, ACTION_REFRESH, ACTION_REMOVE } from "./lib/Actions"
 import { MARKS_PLACEMENT_FIXED, MARKS_PLACEMENT_DEFAULT, MODE_CHAIN, MODE_PEN } from "./lib/Modes"
 import { ktoxy, xytok, pltok } from "./lib/utils"
 import Color from "color"
@@ -679,7 +680,6 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   const selectionElements = useRef([])
   const highlightElements = useRef([])
   const errorElements = useRef([])
-  const chainCurrentWaypoints = useRef([])
   const chainCurrentWaypointsElements = useRef([])
   const penCurrentWaypoints = useRef([])
   const penCurrentWaypointsAdd = useRef(true)
@@ -694,6 +694,8 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   const game = useContext(GameContext.State)
   const updateGame = useContext(GameContext.Dispatch)
   const settings = useContext(SettingsContext.State)
+  const chain = useContext(ChainContext.State)
+  const updateChain = useContext(ChainContext.Dispatch)
 
   const currentMode = useRef(game.mode)
 
@@ -759,20 +761,10 @@ const selectCell = useCallback((cell, evt, append = false) => {
       let markY = Math.floor(y / cell.height * 3)
       let i = markX + markY * 3
       let k = cell.data.k
-
-      let ce = fixedMarkElements.current.find(e => e.data.k === k)
-      let fme = ce.elements[i]
-      let cwp = { k, x: fme.x, y: fme.y }
-      let ci = chainCurrentWaypoints.current.findIndex(p => p.x === cwp.x && p.y === cwp.y)
-      if (ci < 0 && fme.visible) {
-        chainCurrentWaypoints.current.push(cwp)
-      } else if (ci === chainCurrentWaypoints.current.length - 1) {
-        chainCurrentWaypoints.current.pop()
-      }
-
-      // render waypoints
-      chainCurrentWaypointsElements.current.forEach(e => e.data.draw())
-      renderNow()
+      updateChain({ type: ACTION_PUSH, data: {
+        k,
+        i,
+        marks: fixedMarkElements.current } })
     } else {
       let action = append ? ACTION_PUSH : ACTION_SET
       let oe = evt?.data?.originalEvent
@@ -790,7 +782,7 @@ const selectCell = useCallback((cell, evt, append = false) => {
         k: cell.data.k
       })
     }
-  }, [updateGame, renderNow])
+  }, [updateGame, updateChain])
 
   const onPenMove = useCallback((e, cellSize) => {
     if (e.target === null) {
@@ -1034,6 +1026,12 @@ const selectCell = useCallback((cell, evt, append = false) => {
 
     penCurrentWaypoints.current = []
   }, [game.mode])
+
+  useEffect(() => {
+    chainCurrentWaypointsElements.current.forEach(e => e.data.waypoints = chain.waypoints)
+    chainCurrentWaypointsElements.current.forEach(e => e.data.draw())
+    renderNow()
+}, [chain.waypoints, renderNow])
 
   useEffect(() => {
     // optimised resolution for different screens
@@ -1621,13 +1619,14 @@ const selectCell = useCallback((cell, evt, append = false) => {
     let chainWaypoints = new PIXI.Graphics()
     chainWaypoints.zIndex = 49
     chainWaypoints.data = {
+      waypoints: [],
       draw: function (cellSize) {
         this.cellSize = cellSize || this.cellSize
         if (this.cellSize === undefined) {
           return
         }
 
-        let wps = chainCurrentWaypoints.current
+        let wps = this.waypoints
         chainWaypoints.clear()
         if (wps.length > 0) {
           let wp0 = wps[0]
@@ -1799,6 +1798,7 @@ const selectCell = useCallback((cell, evt, append = false) => {
           fe.data.draw(cs)
         }
       }
+      updateChain({ type: ACTION_REFRESH, data: { marks: fixedMarkElements.current } })
 
       allElement.current.calculateBounds()
       allBounds = allElement.current.getBounds()
@@ -1880,7 +1880,7 @@ const selectCell = useCallback((cell, evt, append = false) => {
       interactionManager.setCursorMode("default")
       interactionManager.setCursorMode(hit.cursor)
     }
-  }, [cellSize, maxWidth, maxHeight, portrait, settings.zoom, game.mode])
+  }, [cellSize, maxWidth, maxHeight, portrait, settings.zoom, game.mode, updateChain])
 
   // register keyboard handlers
   useEffect(() => {

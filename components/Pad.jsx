@@ -1,9 +1,10 @@
 import Button from "./Button"
 import SettingsContext from "./contexts/SettingsContext"
 import GameContext from "./contexts/GameContext"
+import ChainContext from "./contexts/ChainContext"
 import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
   TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
-  TYPE_PAINT_MODE, ACTION_TOGGLE } from "./lib/Actions"
+  TYPE_PAINT_MODE, ACTION_TOGGLE, ACTION_CLEAR, ACTION_REVERSE } from "./lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
   getModeGroup, MODE_CHAIN, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
@@ -37,6 +38,7 @@ const Pad = () => {
   const settings = useContext(SettingsContext.State)
   const game = useContext(GameContext.State)
   const updateGame = useContext(GameContext.Dispatch)
+  const updateChain = useContext(ChainContext.Dispatch)
   const [colours, setColours] = useState([])
   const [checkReady, setCheckReady] = useState(false)
   const [digitCount, setDigitCount] = useState([])
@@ -176,6 +178,14 @@ const Pad = () => {
     })
   }
 
+  function onClearChain() {
+    updateChain({ type: ACTION_CLEAR })
+  }
+
+  function onReverseChain() {
+    updateChain({ type: ACTION_REVERSE })
+  }
+
   let modeGroup = getModeGroup(game.mode)
 
   const modeButtons = []
@@ -223,8 +233,21 @@ const Pad = () => {
 
   const digitButtons = []
 
-  if (modeGroup === 0 && game.mode !== MODE_CHAIN) {
-    if (game.mode !== MODE_COLOUR) {
+  if (modeGroup === 0) {
+    if (game.mode === MODE_CHAIN) {
+      digitButtons.push(
+        <Button noPadding onClick={onClearChain}><div className="label-container">Clear</div><style jsx>{styles}</style></Button>
+      )
+      while (digitButtons.length < 3) {
+        digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
+      }
+      digitButtons.push(
+        <Button noPadding onClick={onReverseChain}><div className="label-container">Reverse</div><style jsx>{styles}</style></Button>
+      )
+      while (digitButtons.length < 12) {
+        digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
+      }
+    } else if (game.mode !== MODE_COLOUR) {
       let paintDigit = 0
       if (game.paintMode.active) {
         paintDigit = game.paintMode.digit

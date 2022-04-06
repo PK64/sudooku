@@ -22,6 +22,8 @@ module.exports = {
   ACTION_CLEAR: "clear",
   ACTION_REMOVE: "remove",
   ACTION_ROTATE: "rotate",
+  ACTION_REVERSE: "reverse",
+  ACTION_REFRESH: "refresh",
   ACTION_TOGGLE: "toggle",
   ACTION_RIGHT: "right",
   ACTION_LEFT: "left",
