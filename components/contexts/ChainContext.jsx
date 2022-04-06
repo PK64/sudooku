@@ -1,6 +1,6 @@
 import { createContext, useReducer } from "react"
 import { produce } from "immer"
-import { ACTION_PUSH, ACTION_CLEAR, ACTION_REVERSE, ACTION_REFRESH } from "../lib/Actions"
+import { ACTION_PUSH, ACTION_POP, ACTION_CLEAR, ACTION_REVERSE, ACTION_REFRESH } from "../lib/Actions"
 
 const State = createContext()
 const Dispatch = createContext()
@@ -23,6 +23,10 @@ function chainReducer(state, action) {
       }
       case ACTION_CLEAR: {
         draft.waypoints.length = 0
+        return
+      }
+      case ACTION_POP: {
+        draft.waypoints.pop()
         return
       }
       case ACTION_REVERSE: {

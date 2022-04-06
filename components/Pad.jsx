@@ -4,7 +4,7 @@ import GameContext from "./contexts/GameContext"
 import ChainContext from "./contexts/ChainContext"
 import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
   TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
-  TYPE_PAINT_MODE, ACTION_TOGGLE, ACTION_CLEAR, ACTION_REVERSE } from "./lib/Actions"
+  TYPE_PAINT_MODE, ACTION_TOGGLE, ACTION_CLEAR, ACTION_REVERSE, ACTION_POP } from "./lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
   getModeGroup, MODE_CHAIN, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
@@ -186,6 +186,10 @@ const Pad = () => {
     updateChain({ type: ACTION_REVERSE })
   }
 
+  function onPopChain() {
+    updateChain({ type: ACTION_POP })
+  }
+
   let modeGroup = getModeGroup(game.mode)
 
   const modeButtons = []
@@ -243,6 +247,12 @@ const Pad = () => {
       }
       digitButtons.push(
         <Button noPadding onClick={onReverseChain}><div className="label-container">Reverse</div><style jsx>{styles}</style></Button>
+      )
+      while (digitButtons.length < 6) {
+        digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
+      }
+      digitButtons.push(
+        <Button noPadding onClick={onPopChain}><div className="label-container">Pop</div><style jsx>{styles}</style></Button>
       )
       while (digitButtons.length < 12) {
         digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)

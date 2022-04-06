@@ -19,6 +19,7 @@ module.exports = {
   ACTION_ALL: "all",
   ACTION_SET: "set",
   ACTION_PUSH: "push",
+  ACTION_POP: "pop",
   ACTION_CLEAR: "clear",
   ACTION_REMOVE: "remove",
   ACTION_ROTATE: "rotate",
