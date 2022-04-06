@@ -6,8 +6,8 @@ const LOCAL_STORAGE_KEY = "SudocleSettings"
 const State = createContext()
 const Dispatch = createContext()
 
-const reducer = produce((draft, { colourPalette, theme, marksPlacement, selectionColour,
-    customColours, zoom, fontSizeFactorDigits, fontSizeFactorCornerMarks,
+const reducer = produce((draft, { colourPalette, theme, marksPlacement, autofill,
+    selectionColour, customColours, zoom, fontSizeFactorDigits, fontSizeFactorCornerMarks,
     fontSizeFactorCentreMarks, fontSizeFactorFixedMarks }) => {
   if (colourPalette !== undefined) {
     draft.colourPalette = colourPalette
@@ -17,6 +17,9 @@ const reducer = produce((draft, { colourPalette, theme, marksPlacement, selectio
   }
   if (marksPlacement !== undefined) {
     draft.marksPlacement = marksPlacement
+  }
+  if (autofill !== undefined) {
+    draft.autofill = autofill
   }
   if (selectionColour !== undefined) {
     draft.selectionColour = selectionColour
@@ -45,7 +48,8 @@ const Provider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, {
     colourPalette: "default",
     theme: "default",
-    marksPlacement: "fixed",
+    marksPlacement: "default",
+    autofill: false,
     selectionColour: "yellow",
     customColours: [],
     zoom: 1,

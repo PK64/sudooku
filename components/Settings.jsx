@@ -1,6 +1,7 @@
 import Palette from "./Palette"
 import RadioGroup from "./RadioGroup"
 import RangeSlider from "./RangeSlider"
+import Checkbox from "./Checkbox"
 import SettingsContext from "./contexts/SettingsContext"
 import { useContext, useEffect, useRef, useState } from "react"
 import styles from "./Settings.scss"
@@ -11,6 +12,7 @@ const Settings = () => {
   const updateSettings = useContext(SettingsContext.Dispatch)
   const [themeInternal, setThemeInternal] = useState(settings.theme)
   const [marksPlacementInternal, setMarksPlacementInternal] = useState(settings.marksPlacement)
+  const [autofillInternal, setAutofillInternal] = useState(settings.autofill)
 
   const refPlaceholderCTC = useRef()
   const refPlaceholderWong = useRef()
@@ -32,6 +34,11 @@ const Settings = () => {
     setTimeout(() => {
       updateSettings({ marksPlacement: placement })
     }, 100)
+  }
+
+  function onChangeAutofill(value) {
+    setAutofillInternal(value)
+    updateSettings({ autofill: value })
   }
 
   const changeZoomTimeout = useRef()
@@ -126,7 +133,7 @@ const Settings = () => {
       label: "Dark"
     }]} onChange={onChangeTheme} />
 
-    <h3>Pencil Mark Placement</h3>
+    <h3>Pencil Mark Modes</h3>
     <RadioGroup name="marksPlacement" value={marksPlacementInternal} options={[{
       id: "default",
       label: "Corner and Centre"
@@ -134,6 +141,10 @@ const Settings = () => {
       id: "fixed",
       label: "Fixed"
     }]} onChange={onChangeMarksPlacement} />
+
+    <h3>Auto-Fill Marks</h3>
+    <Checkbox name="autofill" label="Enabled" value={autofillInternal}
+      onChange={onChangeAutofill} />
 
     <h3>Colour Palette</h3>
     <div className="palette-placeholder" data-colour-palette="ctc" ref={refPlaceholderCTC} />

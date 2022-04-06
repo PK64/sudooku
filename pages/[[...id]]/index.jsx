@@ -7,8 +7,10 @@ import Sidebar from "../../components/Sidebar"
 import StatusBar from "../../components/StatusBar"
 import { TYPE_MODE, TYPE_MODE_GROUP, TYPE_SELECTION, TYPE_UNDO, TYPE_REDO, TYPE_INIT,
   ACTION_ALL, ACTION_SET, ACTION_PUSH, ACTION_CLEAR, ACTION_REMOVE, ACTION_ROTATE,
-  ACTION_RIGHT, ACTION_LEFT, ACTION_UP, ACTION_DOWN } from "../../components/lib/Actions"
-import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_COLOUR, MODE_PEN } from "../../components/lib/Modes"
+  ACTION_RIGHT, ACTION_LEFT, ACTION_UP, ACTION_DOWN,
+  TYPE_AUTOFILL_MARKS } from "../../components/lib/Actions"
+import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_COLOUR, MODE_PEN,
+  MODE_FIXED, MARKS_PLACEMENT_FIXED } from "../../components/lib/Modes"
 import { convertFPuzzle } from "../../components/lib/fpuzzlesconverter.js"
 import { convertGivenDigits } from "../../components/lib/givendigitsconverter.js"
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
@@ -36,6 +38,7 @@ const Index = () => {
   const [solvedModalOpen, setSolvedModalOpen] = useState()
   const [errorModalOpen, setErrorModalOpen] = useState()
   const [isTest, setIsTest] = useState(false)
+  const [didAutofill, setDidAutofill] = useState(false)
 
   function onMouseDown(e) {
     // check if we hit a target that would clear the selction
@@ -199,6 +202,26 @@ const Index = () => {
       load(url, fallbackUrl)
     }
   }, [game.data, updateGame])
+
+  // auto-fill pencil marks
+  useEffect(() => {
+    if (didAutofill) {
+      return
+    }
+    if (settings.autofill) {
+      let mode
+      if (settings.marksPlacement === MARKS_PLACEMENT_FIXED) {
+        mode = MODE_FIXED
+      } else {
+        mode = MODE_CORNER
+      }
+      updateGame({
+        type: TYPE_AUTOFILL_MARKS,
+        mode
+      })
+      setDidAutofill(true)
+    }
+  }, [updateGame, didAutofill, settings.autofill, settings.marksPlacement])
 
   // register keyboard handlers
   useEffect(() => {

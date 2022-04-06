@@ -544,11 +544,26 @@ function gameReducerNoUndo(state, mode, action) {
       return
 
     case TYPE_AUTOFILL_MARKS:
-      autofillMarksReducer(state.fixedMarks, state.digits,
-        filterGivens(state.digits, state.selection),
-        state.data?.cells)
-      return
-
+      if (action.mode !== undefined) {
+        mode = action.mode
+      }
+      switch (mode) {
+        case MODE_CORNER:
+          autofillMarksReducer(state.cornerMarks, state.digits,
+            filterGivens(state.digits, state.selection),
+              state.data?.cells)
+          return
+        case MODE_CENTRE:
+          autofillMarksReducer(state.centreMarks, state.digits,
+            filterGivens(state.digits, state.selection),
+              state.data?.cells)
+          return
+        case MODE_FIXED:
+          autofillMarksReducer(state.fixedMarks, state.digits,
+            filterGivens(state.digits, state.selection),
+              state.data?.cells)
+          return
+      }
     case TYPE_DIGITS:
       if (state.paintMode.active && action.action === ACTION_SET) {
         paintModeReducer(state, action)
