@@ -239,7 +239,7 @@ const Pad = () => {
               <div>
                 {digit}
               </div>
-              {(game.mode === MODE_NORMAL && !isNaN(remaining)) && (
+              {((game.mode === MODE_NORMAL || game.mode === MODE_FIXED) && !isNaN(remaining)) && (
               <div className="digit-remaining">
                 {remaining}
               </div>
