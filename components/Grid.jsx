@@ -1624,7 +1624,7 @@ const selectCell = useCallback((cell, evt, append = false) => {
     chainWaypoints.data = {
       waypoints: [],
       lineColor: 0xddbd22,
-      altLineColor: 0xcc7c11,
+      altLineColor: 0x666666,
       headColor: 0x0088ee,
       tailColor: 0xde3333,
       draw: function (cellSize) {
