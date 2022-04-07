@@ -582,7 +582,7 @@ function gameReducerNoUndo(state, mode, action) {
 
     case TYPE_SELECTION:
       selectionReducer(state.selection, action, state.data?.cells)
-      if (state.paintMode.active && action.action === ACTION_SET) {
+      if (state.paintMode.active && state.paintMode.digit !== 0 && action.action === ACTION_SET) {
         digitsModeReducer(state, mode, { digit: state.paintMode.digit, ...action })
       } else {
         highlightSelectedDigit(state)
