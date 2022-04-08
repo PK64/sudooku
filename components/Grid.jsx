@@ -748,7 +748,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     }
   }, [game.data])
 
-const selectCell = useCallback((cell, evt, append = false) => {
+  const selectCell = useCallback((cell, evt, append = false) => {
     if (currentMode.current === MODE_PEN) {
       // do nothing in pen mode
       return
