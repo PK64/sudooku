@@ -26,7 +26,7 @@
   @media (orientation: portrait) {
     height: calc(100vh - #{$status-bar-height});
     flex-direction: column;
-    padding: 1rem;
+    padding: 0.1rem;
   }
 }
 
