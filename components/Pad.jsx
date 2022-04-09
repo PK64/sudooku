@@ -3,12 +3,12 @@ import SettingsContext from "./contexts/SettingsContext"
 import GameContext from "./contexts/GameContext"
 import ChainContext from "./contexts/ChainContext"
 import { TYPE_MODE, TYPE_DIGITS, TYPE_COLOURS, TYPE_UNDO, TYPE_REDO,
-  TYPE_CHECK, ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
+  ACTION_SET, ACTION_REMOVE, TYPE_AUTOFILL_MARKS, TYPE_SET_GIVEN,
   TYPE_PAINT_MODE, ACTION_TOGGLE, ACTION_CLEAR, ACTION_REVERSE, ACTION_POP } from "./lib/Actions"
 import { MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_FIXED, MODE_COLOUR, MODE_PEN,
   getModeGroup, MODE_CHAIN, MARKS_PLACEMENT_FIXED } from "./lib/Modes"
 import { useContext, useEffect, useRef, useState } from "react"
-import { Check, Delete, Redo, Undo } from "lucide-react"
+import { Delete, Redo, Undo } from "lucide-react"
 import Color from "color"
 import classNames from "classnames"
 import styles from "./Pad.scss"
@@ -40,7 +40,6 @@ const Pad = () => {
   const updateGame = useContext(GameContext.Dispatch)
   const updateChain = useContext(ChainContext.Dispatch)
   const [colours, setColours] = useState([])
-  const [checkReady, setCheckReady] = useState(false)
   const [digitCount, setDigitCount] = useState([])
 
   useEffect(() => {
@@ -73,16 +72,6 @@ const Pad = () => {
     }
     setColours(newColours)
   }, [settings.colourPalette, settings.customColours])
-
-  useEffect(() => {
-    // check if all cells are filled
-    if (game.data === undefined) {
-      setCheckReady(false)
-    } else {
-      let nCells = game.data.cells.reduce((acc, v) => acc + v.length, 0)
-      setCheckReady(nCells === game.digits.size)
-    }
-  }, [game.data, game.digits])
 
   useEffect(() => {
     let digitCount = [ -1, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
@@ -153,12 +142,6 @@ const Pad = () => {
     })
   }
 
-  function onCheck() {
-    updateGame({
-      type: TYPE_CHECK
-    })
-  }
-
   function onAutofillMarks() {
     updateGame({
       type: TYPE_AUTOFILL_MARKS
@@ -192,81 +175,95 @@ const Pad = () => {
 
   let modeGroup = getModeGroup(game.mode)
 
-  const modeButtons = []
+  const allButtons = []
+
+  function addButton(classSpec, element) {
+    allButtons.push(
+      <div className={"button-container " + classSpec}>
+        {element}
+        <style jsx>{styles}</style>
+      </div>
+    )
+  }
+
+  addButton("delete-button",
+    <Button noPadding onClick={onDelete}>
+      <div className="delete-container">
+        <Delete size="36" />
+        <style jsx>{styles}</style>
+      </div>
+    </Button>
+  )
+
+  addButton("undo-button",
+    <Button noPadding onClick={onUndo}>
+      <Undo size="36" />
+    </Button>
+  )
+
+  addButton("redo-button",
+    <Button noPadding onClick={onRedo}>
+      <Redo size="36" />
+    </Button>
+  )
 
   if (modeGroup === 0) {
-    // 0
-    modeButtons.push(
+    addButton("normal-mode-button",
       <ModeButton mode={MODE_NORMAL} label="Normal"></ModeButton>
     )
 
-    // 1, 2
     if (settings.marksPlacement === MARKS_PLACEMENT_FIXED) {
-      modeButtons.push(
+      addButton("pencil-mode-button",
         <ModeButton mode={MODE_FIXED} label="Pencil"></ModeButton>
       )
-      modeButtons.push(
+      addButton("chain-mode-button",
         <ModeButton mode={MODE_CHAIN} label="Chain"></ModeButton>
       )
+      addButton("paint-toggle-button",
+        <Button active={game.paintMode.active}
+          noPadding onClick={() => onTogglePaintMode()}>
+          <div className="label-container">Paint<style jsx>{styles}</style></div>
+        </Button>
+      )
     } else {
-      modeButtons.push(
+      addButton("corner-mode-button",
         <ModeButton mode={MODE_CORNER} label="Corner"></ModeButton>
       )
-      modeButtons.push(
+      addButton("centre-mode-button",
         <ModeButton mode={MODE_CENTRE} label="Centre"></ModeButton>
       )
     }
 
-    // 3
-    modeButtons.push(
+    addButton("colour-mode-button",
       <ModeButton mode={MODE_COLOUR} label="Colour"></ModeButton>
     )
   } else {
-    // 0
-    modeButtons.push(
+    addButton("pen-mode-button",
       <ModeButton mode={MODE_PEN} label="Pen"></ModeButton>
     )
-
-    // 1, 2, 3
-    while (modeButtons.length < 4) {
-      modeButtons.push(
-        <div className="placeholder"><style jsx>{styles}</style></div>
-      )
-    }
   }
-
-  const digitButtons = []
 
   if (modeGroup === 0) {
     if (game.mode === MODE_CHAIN) {
-      digitButtons.push(
+      addButton("chain-clear-button",
         <Button noPadding onClick={onClearChain}><div className="label-container">Clear</div><style jsx>{styles}</style></Button>
       )
-      while (digitButtons.length < 3) {
-        digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
-      }
-      digitButtons.push(
+      addButton("chain-reverse-button",
         <Button noPadding onClick={onReverseChain}><div className="label-container">Reverse</div><style jsx>{styles}</style></Button>
       )
-      while (digitButtons.length < 6) {
-        digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
-      }
-      digitButtons.push(
+      addButton("chain-pop-button",
         <Button noPadding onClick={onPopChain}><div className="label-container">Pop</div><style jsx>{styles}</style></Button>
       )
-      while (digitButtons.length < 12) {
-        digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
-      }
     } else if (game.mode !== MODE_COLOUR) {
       let paintDigit = 0
       if (game.paintMode.active) {
         paintDigit = game.paintMode.digit
       }
-      for (let i = 1; i <= 10; ++i) {
+      for (let i = 1; i <= 9; ++i) {
         let digit = i % 10
         let remaining = 9 - digitCount[digit]
         let disabled = (game.paintMode.active && remaining === 0)
-        digitButtons.push(
+        addButton("digit-" + digit + "-button",
           <Button key={i} noPadding active={digit === paintDigit} onClick={() => onDigit(digit)} disabled={disabled}>
             <div className={classNames("digit-container", `digit-${digit}`)}>
               <div>
@@ -283,11 +280,17 @@ const Pad = () => {
         )
       }
     } else if (game.mode === MODE_COLOUR) {
+      const MAX_COLORS = 9
+      let colorCount = 0
       for (let c of colours) {
         if (c === undefined) {
           continue
         }
-        digitButtons.push(
+        colorCount++
+        if (colorCount > MAX_COLORS) {
+          break
+        }
+        addButton("colour-" + colorCount + "-button",
           <Button key={c.digit} noPadding onClick={() => onColour(c.digit)}>
             <div className={classNames("colour-container", { light: c.light })}
               style={{ backgroundColor: c.colour }}>
@@ -296,78 +299,16 @@ const Pad = () => {
           </Button>
         )
       }
-      while (digitButtons.length < 12) {
-        digitButtons.push(<div></div>)
-      }
-    }
-  } else {
-    while (digitButtons.length < 12) {
-      digitButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
     }
   }
 
-  let zeroButton
-  if (game.givenDigitsCount === 0) {
-    zeroButton = (
-      <div className="zero-button">
-        <Button noPadding onClick={onSetGiven}>
-          <div className="label-container">Set Given</div>
-        </Button>
-        <style jsx>{styles}</style>
-      </div>
-    )
-  } else {
-    zeroButton = (
-      <div className="zero-button">
-        <Button noPadding onClick={onAutofillMarks}>
-          <div className="label-container">Autofill Selection</div>
-        </Button>
-        <style jsx>{styles}</style>
-      </div>
-    )
+  while (allButtons.length < 18) {
+    allButtons.push(<div className="placeholder"><style jsx>{styles}</style></div>)
   }
 
   return (
     <div className={classNames("pad", `mode-${game.mode}`)} ref={ref}>
-      <Button noPadding onClick={onDelete}>
-        <div className="delete-container">
-          <Delete size="1.05rem" />
-        </div>
-      </Button>
-      <Button noPadding onClick={onUndo}>
-        <Undo size="1.05rem" />
-      </Button>
-      <Button noPadding onClick={onRedo}>
-        <Redo size="1.05rem" />
-      </Button>
-      {modeButtons[0]}
-      {digitButtons[0]}
-      {digitButtons[1]}
-      {digitButtons[2]}
-      {modeButtons[1]}
-      {digitButtons[3]}
-      {digitButtons[4]}
-      {digitButtons[5]}
-      {modeButtons[2]}
-      {digitButtons[6]}
-      {digitButtons[7]}
-      {digitButtons[8]}
-      {modeButtons[3]}
-      {game.mode !== MODE_COLOUR && (<>
-        {zeroButton}
-        <Button active={game.paintMode.active}
-          noPadding onClick={() => onTogglePaintMode()}>
-          <div className="label-container">Paint</div>
-        </Button>
-      </>)}
-      {game.mode === MODE_COLOUR && (<>
-        {digitButtons[9]}
-        {digitButtons[10]}
-        {digitButtons[11]}
-      </>)}
-      <Button noPadding onClick={onCheck} pulsating={!game.solved && checkReady}>
-        <Check size="1.05rem" />
-      </Button>
+      {allButtons}
       <style jsx>{styles}</style>
     </div>
   )

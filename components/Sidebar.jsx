@@ -76,7 +76,7 @@ const Sidebar = () => {
       {sidebarState.expanded && sidebarState.activeTabId === ID_ABOUT && <About />}
     </div>
     <div className="close-button">
-      <X size="1rem" onClick={() => onTabClick(sidebarState.activeTabId)} />
+      <X size="36" onClick={() => onTabClick(sidebarState.activeTabId)} />
     </div>
     <style jsx>{styles}</style>
   </div>)
