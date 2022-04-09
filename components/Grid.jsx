@@ -1,8 +1,9 @@
 import GameContext from "./contexts/GameContext"
 import SettingsContext from "./contexts/SettingsContext"
+import ChainContext from "./contexts/ChainContext"
 import { TYPE_DIGITS, TYPE_PENLINES, TYPE_SELECTION, ACTION_CLEAR,
-  ACTION_SET, ACTION_PUSH, ACTION_REMOVE } from "./lib/Actions"
-import { MARKS_PLACEMENT_FIXED, MARKS_PLACEMENT_DEFAULT, MODE_PEN } from "./lib/Modes"
+  ACTION_SET, ACTION_PUSH, ACTION_REFRESH, ACTION_REMOVE } from "./lib/Actions"
+import { MARKS_PLACEMENT_FIXED, MARKS_PLACEMENT_DEFAULT, MODE_CHAIN, MODE_PEN } from "./lib/Modes"
 import { ktoxy, xytok, pltok } from "./lib/utils"
 import Color from "color"
 import polygonClipping from "polygon-clipping"
@@ -354,6 +355,7 @@ function makeFixedMarks(x, y, cellSize, fontSize, n = 9, fontWeight = "normal") 
     })
 
     text.data = {
+      i,
       draw: function (cellSize) {
         let cx = x * cellSize + cellSize / 2
         let cy = y * cellSize + cellSize / 2 - 0.5
@@ -678,6 +680,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   const selectionElements = useRef([])
   const highlightElements = useRef([])
   const errorElements = useRef([])
+  const chainCurrentWaypointsElements = useRef([])
   const penCurrentWaypoints = useRef([])
   const penCurrentWaypointsAdd = useRef(true)
   const penCurrentWaypointsElements = useRef([])
@@ -691,6 +694,8 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
   const game = useContext(GameContext.State)
   const updateGame = useContext(GameContext.Dispatch)
   const settings = useContext(SettingsContext.State)
+  const chain = useContext(ChainContext.State)
+  const updateChain = useContext(ChainContext.Dispatch)
 
   const currentMode = useRef(game.mode)
 
@@ -749,22 +754,38 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       return
     }
 
-    let action = append ? ACTION_PUSH : ACTION_SET
-    let oe = evt?.data?.originalEvent
-    if (oe?.metaKey || oe?.ctrlKey) {
-      if (oe?.shiftKey) {
-        action = ACTION_REMOVE
-      } else {
-        action = ACTION_PUSH
+    if (currentMode.current === MODE_CHAIN) {
+      if (evt.data.global === undefined) {
+        return
       }
-    }
+      let x = evt.data.global.x - cell.x
+      let y = evt.data.global.y - cell.y
+      let markX = Math.floor(x / cell.width * 3)
+      let markY = Math.floor(y / cell.height * 3)
+      let i = markX + markY * 3
+      let k = cell.data.k
+      updateChain({ type: ACTION_PUSH, data: {
+        k,
+        i,
+        marks: fixedMarkElements.current } })
+    } else {
+      let action = append ? ACTION_PUSH : ACTION_SET
+      let oe = evt?.data?.originalEvent
+      if (oe?.metaKey || oe?.ctrlKey) {
+        if (oe?.shiftKey) {
+          action = ACTION_REMOVE
+        } else {
+          action = ACTION_PUSH
+        }
+      }
 
-    updateGame({
-      type: TYPE_SELECTION,
-      action,
-      k: cell.data.k
-    })
-  }, [updateGame])
+      updateGame({
+        type: TYPE_SELECTION,
+        action,
+        k: cell.data.k
+      })
+    }
+  }, [updateGame, updateChain])
 
   const onPenMove = useCallback((e, cellSize) => {
     if (e.target === null) {
@@ -998,7 +1019,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     currentMode.current = game.mode
 
     if (app.current !== undefined) {
-      if (game.mode === MODE_PEN) {
+      if (game.mode === MODE_PEN || game.mode === MODE_CHAIN) {
         app.current.renderer.plugins.interaction.cursorStyles.pointer = "crosshair"
       } else {
         app.current.renderer.plugins.interaction.cursorStyles.pointer = "pointer"
@@ -1008,6 +1029,12 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
 
     penCurrentWaypoints.current = []
   }, [game.mode])
+
+  useEffect(() => {
+    chainCurrentWaypointsElements.current.forEach(e => e.data.waypoints = chain.waypoints)
+    chainCurrentWaypointsElements.current.forEach(e => e.data.draw())
+    renderNow()
+}, [chain.waypoints, renderNow])
 
   useEffect(() => {
     // optimised resolution for different screens
@@ -1328,7 +1355,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     background.interactive = true
     background.zIndex = -1000
     background.on("pointerdown", () => {
-      if (currentMode.current !== MODE_PEN) {
+      if (currentMode.current !== MODE_PEN && currentMode.current !== MODE_CHAIN) {
         updateGame({
           type: TYPE_SELECTION,
           action: ACTION_CLEAR
@@ -1591,6 +1618,62 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       })
     })
 
+    // create elements to visualize chain links
+    let chainWaypoints = new PIXI.Graphics()
+    chainWaypoints.zIndex = 49
+    chainWaypoints.data = {
+      waypoints: [],
+      lineColor: 0xddbd22,
+      altLineColor: 0x666666,
+      headColor: 0x0088ee,
+      tailColor: 0xde3333,
+      draw: function (cellSize) {
+        this.cellSize = cellSize || this.cellSize
+        if (this.cellSize === undefined) {
+          return
+        }
+
+        let wps = this.waypoints
+        chainWaypoints.clear()
+        if (wps.length > 0) {
+          let wp0 = wps[0]
+          if (wps.length > 1) {
+            chainWaypoints.moveTo(wp0.x, wp0.y)
+            for (let i = 1; i < wps.length; ++i) {
+              let wp = wps[i]
+              let color = (i % 2 === 1) ? this.lineColor : this.altLineColor
+              chainWaypoints.lineStyle({
+                width: 3 * SCALE_FACTOR,
+                alpha: 0.75,
+                color,
+                cap: PIXI.LINE_CAP.ROUND,
+                join: PIXI.LINE_JOIN.ROUND
+              })
+              chainWaypoints.lineTo(wp.x, wp.y)
+              chainWaypoints.lineStyle({
+                width: 3 * SCALE_FACTOR,
+                alpha: 0.9,
+                color: color
+              }).drawCircle(wp.x, wp.y, this.cellSize / 6)
+              }
+            let wpe = wps[wps.length - 1]
+            chainWaypoints.lineStyle({
+              width: 3 * SCALE_FACTOR,
+              alpha: 0.9,
+              color: this.tailColor
+            }).drawCircle(wpe.x, wpe.y, this.cellSize / 6)
+          }
+          chainWaypoints.lineStyle({
+            width: 3 * SCALE_FACTOR,
+            alpha: 0.9,
+            color: this.headColor
+          }).drawCircle(wp0.x, wp0.y, this.cellSize / 6)
+        }
+      }
+    }
+    all.addChild(chainWaypoints)
+    chainCurrentWaypointsElements.current.push(chainWaypoints)
+
     // create element that visualises current pen waypoints
     let penWaypoints = new PIXI.Graphics()
     penWaypoints.zIndex = 70
@@ -1678,6 +1761,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       selectionElements.current = []
       highlightElements.current = []
       errorElements.current = []
+      chainCurrentWaypointsElements.current = []
       penCurrentWaypointsElements.current = []
       penHitareaElements.current = []
       penLineElements.current = []
@@ -1707,7 +1791,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
         arrowHeadElements, extraRegionElements, underlayElements, overlayElements,
         givenCornerMarkElements, digitElements, centreMarkElements, colourElements,
         selectionElements, highlightElements, errorElements, penCurrentWaypointsElements,
-        penLineElements, penHitareaElements]
+        penLineElements, penHitareaElements, chainCurrentWaypointsElements]
       for (let r of elementsToRedraw) {
         for (let e of r.current) {
           if (e.clear !== undefined) {
@@ -1726,6 +1810,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
           fe.data.draw(cs)
         }
       }
+      updateChain({ type: ACTION_REFRESH, data: { marks: fixedMarkElements.current } })
 
       allElement.current.calculateBounds()
       allBounds = allElement.current.getBounds()
@@ -1807,7 +1892,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
       interactionManager.setCursorMode("default")
       interactionManager.setCursorMode(hit.cursor)
     }
-  }, [cellSize, maxWidth, maxHeight, portrait, settings.zoom, game.mode])
+  }, [cellSize, maxWidth, maxHeight, portrait, settings.zoom, game.mode, updateChain])
 
   // register keyboard handlers
   useEffect(() => {
