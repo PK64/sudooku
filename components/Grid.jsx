@@ -755,7 +755,7 @@ const Grid = ({ maxWidth, maxHeight, portrait, onFinishRender }) => {
     }
 
     if (currentMode.current === MODE_CHAIN) {
-      if (evt.data.global === undefined) {
+      if (evt?.data?.global === undefined) {
         return
       }
       let x = evt.data.global.x - cell.x
